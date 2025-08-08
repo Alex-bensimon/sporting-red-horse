@@ -194,7 +194,7 @@ function DropSlot({ slot, playerId, players, onDrop }:{ slot:Slot; playerId:stri
               draggable
               onDragStart={(e)=>{ e.dataTransfer.setData('text/plain', playerId!); e.dataTransfer.setData('application/srh-origin', slot.key) }}
             >
-              <FutCard p={players.find(p=>p.id===playerId)!} compact displayPosition={slot.key} detailHref={`/players/${playerId}`} />
+              <FutCard p={players.find(p=>p.id===playerId)!} compact displayPosition={slot.key} detailHref={`/players/${playerId}`} detailPosition="bottom-right" />
             </div>
           </div>
         ) : <span>+ {slot.key}</span>}

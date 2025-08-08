@@ -22,6 +22,8 @@ export type Player = {
   side?: 'L' | 'R' | 'C'
   photo?: string
   jersey?: number
+  heightCm?: number
+  weightKg?: number
 }
 
 export type Slot = { key: string; x: number; y: number; position: Player['position'] | 'ANY' }

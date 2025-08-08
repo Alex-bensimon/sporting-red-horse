@@ -4,6 +4,11 @@ import './globals.css'
 export const metadata: Metadata = {
   title: 'Sporting Red Horse • 7v7',
   description: "Site officiel du Sporting Red Horse : calendrier, actualités, médias, résumés, effectif et constructeur de compositions.",
+  icons: {
+    icon: '/logo.jpeg',
+    shortcut: '/logo.jpeg',
+    apple: '/logo.jpeg',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

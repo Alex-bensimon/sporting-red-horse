@@ -1,5 +1,6 @@
 import { players as localPlayers } from '@/lib/data'
-import { getPlayers } from '@/lib/store'
+import type { Player } from '@/lib/types'
+import localPlayersData from '@data/players.json'
 
 // Required for static export with dynamic route
 export function generateStaticParams(){
@@ -7,7 +8,8 @@ export function generateStaticParams(){
 }
 
 export default async function PlayerPage({ params }:{ params:{ id:string }}){
-  const list = await getPlayers()
+  // Force static data at build time (Cloudflare) to avoid Firebase initialization
+  const list = (localPlayersData as Player[])
   const p = list.find(x=> x.id===params.id)
   if (!p) return <section className="container py-16">Joueur introuvable.</section>
   return (
@@ -40,7 +42,23 @@ export default async function PlayerPage({ params }:{ params:{ id:string }}){
               {p.position}
             </div>
           </div>
-          <div className="mt-6 h-64 rounded-xl bg-zinc-800/60" />
+          <div className="mt-6 h-64 rounded-xl overflow-hidden bg-zinc-800/30">
+            <img 
+              src={p.photo || `/players/${p.name.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/\s+/g,'')}.webp`} 
+              alt={p.name} 
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+            <div className="rounded-lg bg-zinc-900/60 border border-zinc-700 p-3">
+              <div className="text-zinc-400">Taille</div>
+              <div className="text-lg font-bold text-white">{p.heightCm ? `${p.heightCm} cm` : '—'}</div>
+            </div>
+            <div className="rounded-lg bg-zinc-900/60 border border-zinc-700 p-3">
+              <div className="text-zinc-400">Poids</div>
+              <div className="text-lg font-bold text-white">{p.weightKg ? `${p.weightKg} kg` : '—'}</div>
+            </div>
+          </div>
         </div>
 
         <div className="space-y-4">

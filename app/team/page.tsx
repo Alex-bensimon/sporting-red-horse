@@ -116,7 +116,7 @@ export default function TeamPage(){
           </div>
         </div>
         
-        <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(180px,1fr))] justify-items-center">
+        <div className="team-grid grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))] justify-items-center">
           {filtered.map((p, index) => (
             <div key={p.id} className="relative group">
               {index < 3 && (
