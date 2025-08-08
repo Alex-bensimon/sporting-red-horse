@@ -8,6 +8,7 @@ import { app } from '../firebase/client'
 import { matches } from '../lib/data'
 
 async function main(){
+  if (!app) throw new Error('Firebase non configuré: définissez les variables NEXT_PUBLIC_FIREBASE_* pour exécuter le seed.')
   const db = getFirestore(app)
   for (const m of matches){
     await setDoc(doc(collection(db,'matches'), m.id), m as any)

@@ -11,7 +11,7 @@ export function isFirebaseReady(){
 }
 
 export async function saveLineup(params: { name: string; formation: string; lineup: Lineup; matchId?: string | null }){
-  if (!isFirebaseReady()) {
+  if (!isFirebaseReady() || !db) {
     // Fallback: store under localStorage list
     const raw = localStorage.getItem('srh_lineups_store_v1')
     const list = raw ? JSON.parse(raw) : []
@@ -31,14 +31,14 @@ export async function saveLineup(params: { name: string; formation: string; line
 }
 
 export async function getMatches(){
-  if (!isFirebaseReady()) return (localMatchesData as Match[])
+  if (!isFirebaseReady() || !db) return (localMatchesData as Match[])
   const snap = await getDocs(collection(db,'matches'))
   if (snap.empty) return localMatches
   return snap.docs.map(d=> ({ id: d.id, ...d.data() } as any))
 }
 
 export async function getLineupsForMatch(matchId: string){
-  if (!isFirebaseReady()) {
+  if (!isFirebaseReady() || !db) {
     const raw = localStorage.getItem('srh_lineups_store_v1')
     const list = raw ? JSON.parse(raw) : []
     return list.filter((l:any)=> l.matchId === matchId)
@@ -49,7 +49,7 @@ export async function getLineupsForMatch(matchId: string){
 }
 
 export async function getPlayers(){
-  if (!isFirebaseReady()) return (localPlayersData as Player[])
+  if (!isFirebaseReady() || !db) return (localPlayersData as Player[])
   const snap = await getDocs(collection(db,'players'))
   if (snap.empty) return (localPlayersData as Player[])
   return snap.docs.map(d=> ({ id: d.id, ...d.data() } as any))

@@ -1,12 +1,12 @@
 "use client"
-import { signInWithPopup, signOut } from 'firebase/auth'
-import { auth, googleProvider } from '../../firebase/client'
+import { signInWithPopup, signOut } from 'firebase/auth';
+import { auth, googleProvider } from '../../firebase/client';
 
 export default function LoginPage(){
   // Note: react-firebase-hooks not installed to keep deps minimal; simple local state alternative
-  const user = auth.currentUser
-  async function login(){ await signInWithPopup(auth, googleProvider) }
-  async function logout(){ await signOut(auth) }
+  const user = auth?.currentUser || null
+  async function login(){ if (!auth || !googleProvider) return; await signInWithPopup(auth, googleProvider) }
+  async function logout(){ if (!auth) return; await signOut(auth) }
   return (
     <section className="container py-8">
       <h2 className="mb-3 text-2xl font-bold">Authentification</h2>
