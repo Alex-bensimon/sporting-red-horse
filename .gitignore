@@ -1,0 +1,43 @@
+# Node / Next.js
+node_modules/
+.next/
+out/
+dist/
+build/
+coverage/
+.next/cache/
+*.tsbuildinfo
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# macOS
+.DS_Store
+
+# Editor settings
+.vscode/
+.idea/
+
+# Vercel / deployment
+.vercel/
+
+# Firebase
+firebase-debug.log
+web/.firebase/
+cred.json
+
+.next
+out
+node_modules
+.env*
+
+cred.json

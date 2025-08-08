@@ -1,0 +1,260 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root{
+  --color-red: #9b2c2c;
+  --color-gold: #c9a86a;
+  --color-red-dark: #7a2222;
+  --color-gold-dark: #a78b52;
+  --gradient-gold: linear-gradient(135deg, #c9a86a, #a78b52);
+  --gradient-red: linear-gradient(135deg, #9b2c2c, #7a2222);
+  --shadow-gold: 0 10px 25px rgba(201, 168, 106, 0.2);
+  --shadow-red: 0 10px 25px rgba(155, 44, 44, 0.2);
+}
+
+body{
+  font-feature-settings: "cv01" on, "cv02" on;
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 20%, rgba(201, 168, 106, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(155, 44, 44, 0.03) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.container{ @apply mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8; }
+
+/* Animated background elements */
+.hero-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  z-index: -1;
+}
+
+.hero-bg::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: 
+    conic-gradient(from 0deg, transparent, rgba(201, 168, 106, 0.05), transparent),
+    conic-gradient(from 120deg, transparent, rgba(155, 44, 44, 0.05), transparent);
+  animation: rotate 20s linear infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Glass effect for cards and sections */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-effect-gold {
+  background: rgba(201, 168, 106, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(201, 168, 106, 0.2);
+}
+
+/* Enhanced button styles */
+.btn-primary {
+  background: var(--gradient-red);
+  border: none;
+  box-shadow: var(--shadow-red);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.btn-primary:hover::before {
+  left: 100%;
+}
+
+.btn-secondary {
+  background: transparent;
+  border: 2px solid var(--color-gold);
+  color: var(--color-gold);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-secondary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 100%;
+  background: var(--gradient-gold);
+  transition: width 0.3s ease;
+  z-index: -1;
+}
+
+.btn-secondary:hover {
+  color: #000;
+  border-color: transparent;
+}
+
+.btn-secondary:hover::before {
+  width: 100%;
+}
+
+/* Enhanced feature cards */
+.feature-card {
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.4s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.feature-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(201, 168, 106, 0.05), rgba(155, 44, 44, 0.05));
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  border-color: rgba(201, 168, 106, 0.3);
+}
+
+.feature-card:hover::before {
+  opacity: 1;
+}
+
+.feature-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Football pitch */
+.pitch{position:relative; min-height:920px; border-radius:1rem; overflow:hidden; border:1px solid rgba(16,185,129,.35);} 
+.pitch::before{content:""; position:absolute; inset:0; background:
+  radial-gradient(100% 60% at 50% 0%, rgba(16,185,129,.6), rgba(6,95,70,.9)),
+  linear-gradient(#0b3d2e, #0a2e24);
+  z-index:0;}
+.pitch::after{content:""; position:absolute; inset:12px; border:2px solid rgba(255,255,255,.18); border-radius:.75rem; z-index:1;
+  /* Extra field markings for 7v7 half-pitch */
+  background:
+    /* Center line near top (halfway) */
+    linear-gradient(rgba(255,255,255,.18), rgba(255,255,255,.18)) center 14%/80% 2px no-repeat,
+    /* Penalty area rectangle */
+    linear-gradient(rgba(255,255,255,.18), rgba(255,255,white,.18)) center 72%/60% 2px no-repeat,
+    linear-gradient(rgba(255,255,255,.18), rgba(255,255,255,.18)) 20% 72%/2px 22% no-repeat,
+    linear-gradient(rgba(255,255,255,.18), rgba(255,255,255,.18)) 80% 72%/2px 22% no-repeat,
+    /* Goal area rectangle */
+    linear-gradient(rgba(255,255,255,.18), rgba(255,255,255,.18)) center 88%/30% 2px no-repeat,
+    linear-gradient(rgba(255,255,255,.18), rgba(255,255,255,.18)) 35% 88%/2px 10% no-repeat,
+    linear-gradient(rgba(255,255,255,.18), rgba(255,255,255,.18)) 65% 88%/2px 10% no-repeat;
+}
+.pitch > *{position:relative; z-index:2}
+
+/* Ensure drop slots position correctly and cards look clean when placed */
+.drop-slot{position:absolute; height:160px; width:140px}
+.drop-slot .fut-card{width:140px}
+.drop-slot-inner{display:flex; align-items:center; justify-content:center; height:100%; width:100%; border-radius:.75rem; border:2px dashed rgba(255,255,255,.3); background:rgba(255,255,255,.05); color:rgba(255,255,255,.7); font-size:.75rem}
+.drop-slot-filled .drop-slot-inner{border-style:none; background:transparent;}
+
+/* FUT-style player card */
+.fut-card{position:relative; border-radius:22px; padding:12px; color:#1f1f1f; width:100%; min-width:140px; height:auto;
+  background:
+    radial-gradient(80% 50% at 50% 0%, rgba(255,255,255,.45), rgba(255,255,255,0) 60%),
+    conic-gradient(from 20deg at 40% 40%, rgba(255,255,255,.35), rgba(255,255,255,0) 35%),
+    linear-gradient(180deg, #f6e7b5 0%, #ebcd79 38%, #dbb65f 60%, #c7a34f 100%);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.12), 0 8px 18px rgba(0,0,0,.35);
+}
+.fut-card:before{content:""; position:absolute; inset:0; border-radius:22px; pointer-events:none;
+  background: repeating-linear-gradient(115deg, rgba(255,255,255,.08) 0 2px, rgba(255,255,255,0) 2px 6px);
+  mix-blend-mode: overlay; opacity:.6
+}
+.fut-card:after{content:""; position:absolute; left:50%; bottom:-14px; transform:translateX(-50%);
+  border-left:14px solid transparent; border-right:14px solid transparent; border-top:14px solid #c49d4a;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,.35));
+}
+/* Denser list variant (used in Effectif + page équipe) */
+.fut-card--list:after{display:none}
+.fut-card--list .fut-card__photo{height:70px; margin:6px 0}
+.fut-card--list .fut-card__name{padding:4px 6px; font-size:12px}
+.fut-card__top{display:flex; align-items:center; justify-content:space-between}
+.fut-card__rating{font-weight:900; font-size:22px}
+.fut-card__pos{font-weight:700; font-size:12px}
+.fut-card__media{position:relative}
+.fut-card__photo{border-radius:12px; background:rgba(0,0,0,.06); height:84px; margin:8px 0}
+.fut-card__name{font-weight:900; text-align:center; margin-top:6px; padding:6px 8px; border-radius:10px; background:linear-gradient(180deg, #f6e7b5, #e8cf8b); box-shadow: inset 0 0 0 1px rgba(0,0,0,.12)}
+.fut-card__stats{position:relative; margin-top:10px; padding-top:12px; border-top:1px solid rgba(0,0,0,.35)}
+.fut-card__stats:before{content:""; position:absolute; left:50%; top:10px; bottom:8px; width:1px; background:rgba(0,0,0,.35)}
+.fut-card__stat{display:flex; justify-content:space-between; background:rgba(255,255,255,.25); border:1px solid rgba(0,0,0,.15); border-radius:8px; padding:4px 8px}
+/* optional elements removed by request */
+/* .fut-card__crest, .fut-card__flag, .fut-card__jersey */
+
+/* Detail button (opens player page) */
+.fut-card__detail{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); padding:6px; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:9999px;
+  color:#1f1f1f; background:linear-gradient(180deg, #fff, #f2e8c7); border:1px solid rgba(0,0,0,.2);
+  box-shadow: 0 2px 6px rgba(0,0,0,.2)}
+.fut-card__detail:hover{filter:brightness(1.05)}
+
+/* Remove-from-slot button */
+.slot-remove{position:absolute; left:6px; top:6px; width:24px; height:24px; display:flex; align-items:center; justify-content:center; border-radius:9999px; color:#fff;
+  background:rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.25); box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.slot-remove:hover{background:rgba(0,0,0,.7)}
+
+/* Pitch-specific card size tweaks: wider and shorter */
+.drop-slot .fut-card{min-height:140px; padding:10px}
+.drop-slot .fut-card__photo{height:64px}
+.drop-slot .fut-card__name{margin-top:4px; padding:4px 6px; font-size:12px}
+
+
+/* Effectif grids: size controlled by grid columns; ensure cards can shrink */
+.roster-grid .fut-card{min-width:120px}
+
+
+/* Sponsors marquee */
+.marquee{position:relative; overflow:hidden}
+.marquee::before,.marquee::after{content:""; position:absolute; top:0; width:60px; height:100%; z-index:2; pointer-events:none}
+.marquee::before{left:0; background:linear-gradient(90deg, rgba(0,0,0,0.8), rgba(0,0,0,0))}
+.marquee::after{right:0; background:linear-gradient(270deg, rgba(0,0,0,0.8), rgba(0,0,0,0))}
+.marquee__track{display:flex; align-items:center; gap:80px; width:max-content; animation: marquee-scroll 25s linear infinite}
+.marquee:hover .marquee__track{animation-play-state:paused}
+@keyframes marquee-scroll{from{transform:translateX(0)} to{transform:translateX(-50%)}}
