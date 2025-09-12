@@ -1,7 +1,7 @@
 "use client"
 import { FutCard } from '@/components/FutCard'
 import { getFormations, getPresets } from '@/lib/store'
-import type { Lineup, Player, Slot } from '@/lib/types'
+import type { Lineup, Player, Slot, PresetData, MatchSheet } from '@/lib/types'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { useAuth } from '@/lib/auth-context'
@@ -14,7 +14,7 @@ export default function Builder({ matchId, onLineupSaved }:{ matchId: string; on
   const [name,setName] = useState('Compo')
   const [playersList, setPlayersList] = useState<Player[]>([])
   const [formations, setFormations] = useState<Record<string, Slot[]>>({})
-  const [presets, setPresets] = useState<Record<string, string[]>>({})
+  const [presets, setPresets] = useState<Record<string, PresetData | string[]>>({})
   
   useEffect(() => {
     async function loadData() {
@@ -86,7 +86,7 @@ export default function Builder({ matchId, onLineupSaved }:{ matchId: string; on
   const [savedId,setSavedId] = useState<string|null>(null)
   const [creating, setCreating] = useState(false)
   const [updating, setUpdating] = useState(false)
-  const [matchSheet, setMatchSheet] = useState(null)
+  const [matchSheet, setMatchSheet] = useState<MatchSheet | null>(null)
 
   const handleCreateMatchSheet = async () => {
     if (!currentPlayer || !isCaptain) return
@@ -103,13 +103,17 @@ export default function Builder({ matchId, onLineupSaved }:{ matchId: string; on
         absentPlayers: Array.from(absentPlayers) 
       })
       
-      // 2. Enregistrer le preset
-      const layout = formations[formation] || []
-      const ordered = layout.map(s => lineup[s.key] || null)
-      await savePreset({ id: name, formation, playerIds: ordered, bySlot: lineup })
+      // 2. Enregistrer le preset avec le nouveau format
+      const starters = Object.values(lineup).filter(Boolean) as string[]
+      await savePreset({ 
+        id: name, 
+        formation, 
+        starters,
+        subs,
+        absent: Array.from(absentPlayers)
+      })
       
       // 3. Créer la feuille de match
-      const starters = Object.values(lineup).filter(Boolean) as string[]
       const actualPlayers = [...starters, ...subs]
       const absentPlayersArray = Array.from(absentPlayers)
       
@@ -196,16 +200,38 @@ export default function Builder({ matchId, onLineupSaved }:{ matchId: string; on
           {Object.keys(formations || {}).map(k=> <option key={k}>{k}</option>)}
         </select>
         <button className="rounded-md border border-zinc-700 px-3 py-2" onClick={()=> setLineup({})}>Vider</button>
-        <select onChange={(e)=>{ const pr = presets[e.target.value as keyof typeof presets]; if (!pr) return; const layout = formations[formation] || []; const next: Lineup = {}; layout.forEach((slot,i)=> next[slot.key] = pr[i] || null); setLineup(next) }} className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2">
+        <select onChange={(e)=>{ 
+          const preset = presets[e.target.value as keyof typeof presets]; 
+          if (!preset) return; 
+          const layout = formations[formation] || []; 
+          const next: Lineup = {};
+          
+          // Support ancien format (tableau) et nouveau format (objet)
+          if (Array.isArray(preset)) {
+            // Ancien format : juste les titulaires dans l'ordre
+            layout.forEach((slot,i)=> next[slot.key] = preset[i] || null);
+            setLineup(next);
+          } else {
+            // Nouveau format : avec titulaires, remplaçants et absents
+            layout.forEach((slot,i)=> next[slot.key] = preset.starters[i] || null);
+            setLineup(next);
+            setAbsentPlayers(new Set(preset.absent || []));
+          }
+        }} className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2">
           <option value="">Preset…</option>
           {Object.keys(presets || {}).map(k=> <option key={k} value={k}>{k}</option>)}
         </select>
         <button className="rounded-md bg-zinc-700 px-3 py-2" onClick={async()=>{
           const { id } = await saveLineup({ name, formation, lineup, matchId, subs, absentPlayers: Array.from(absentPlayers) })
-          // Enregistrer aussi un preset avec mapping par slot
-          const layout = formations[formation] || []
-          const ordered = layout.map(s => lineup[s.key] || null)
-          await savePreset({ id: name, formation, playerIds: ordered, bySlot: lineup })
+          // Enregistrer aussi un preset avec le nouveau format
+          const starters = Object.values(lineup).filter(Boolean) as string[]
+          await savePreset({ 
+            id: name, 
+            formation, 
+            starters,
+            subs,
+            absent: Array.from(absentPlayers)
+          })
           setSavedId(id)
           // Notifier le parent que la composition a été sauvée
           if (onLineupSaved) onLineupSaved()

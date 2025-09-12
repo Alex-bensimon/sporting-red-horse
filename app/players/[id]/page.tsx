@@ -1,6 +1,6 @@
 "use client"
-import { getPlayerById, getPlayers, getPlayerStats, getMatches } from '@/lib/store'
-import type { Player, MatchPlayerStats, Match } from '@/lib/types'
+import { getPlayerById, getPlayers, getPlayerStats, getMatches, getPlayerRatings } from '@/lib/store'
+import type { Player, MatchPlayerStats, Match, PlayerRating } from '@/lib/types'
 import { useEffect, useState } from 'react'
 
 
@@ -8,18 +8,21 @@ export default function PlayerPage({ params }:{ params:{ id:string }}){
   const [p, setP] = useState<Player | null>(null)
   const [stats, setStats] = useState<MatchPlayerStats[]>([])
   const [matches, setMatches] = useState<Match[]>([])
+  const [ratings, setRatings] = useState<PlayerRating[]>([])
   const [loading, setLoading] = useState(true)
   
   useEffect(()=>{ 
     async function loadPlayerData() {
-      const [player, playerStats, allMatches] = await Promise.all([
+      const [player, playerStats, allMatches, playerRatings] = await Promise.all([
         getPlayerById(params.id),
         getPlayerStats(params.id),
-        getMatches()
+        getMatches(),
+        getPlayerRatings(params.id)
       ])
       setP(player)
       setStats(playerStats)
       setMatches(allMatches)
+      setRatings(playerRatings)
       setLoading(false)
     }
     loadPlayerData()
@@ -35,6 +38,31 @@ export default function PlayerPage({ params }:{ params:{ id:string }}){
   const totalCleanSheets = stats.reduce((sum, s) => sum + (s.cleanSheet ? 1 : 0), 0)
   const totalMinutes = stats.reduce((sum, s) => sum + (s.minutes || 0), 0)
   const matchesPlayed = stats.length
+  
+  // Calcul des statistiques de notes - par match
+  // Grouper les notes par match pour calculer la moyenne par match
+  const ratingsByMatch = ratings.reduce((acc, rating) => {
+    if (!acc[rating.matchId]) {
+      acc[rating.matchId] = []
+    }
+    acc[rating.matchId].push(rating.rating)
+    return acc
+  }, {} as Record<string, number[]>)
+  
+  // Calculer les moyennes par match
+  const matchAverages = Object.values(ratingsByMatch).map(matchRatings => 
+    Math.round((matchRatings.reduce((sum, r) => sum + r, 0) / matchRatings.length) * 10) / 10
+  )
+  
+  // Statistiques basées sur les moyennes par match
+  const averageRating = matchAverages.length > 0 ? 
+    Math.round((matchAverages.reduce((sum, avg) => sum + avg, 0) / matchAverages.length) * 10) / 10 : 0
+  const bestRating = matchAverages.length > 0 ? Math.max(...matchAverages) : 0
+  const worstRating = matchAverages.length > 0 ? Math.min(...matchAverages) : 0
+  const ratingsCount = ratings.length
+  
+  // Calcul du temps de jeu
+  const avgMinutesPerMatch = matchesPlayed > 0 ? Math.round(totalMinutes / matchesPlayed) : 0
   
   // Stats par match avec infos du match
   const statsWithMatches = stats.map(stat => {
@@ -110,7 +138,7 @@ export default function PlayerPage({ params }:{ params:{ id:string }}){
             <h3 className="mb-4 text-xl font-bold text-white">Statistiques de Match</h3>
             {matchesPlayed > 0 ? (
               <>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
                   <div className="text-center p-3 bg-zinc-900/60 rounded-lg">
                     <div className="text-2xl font-bold text-redhorse-gold">{totalGoals}</div>
                     <div className="text-sm text-zinc-400">⚽ Buts</div>
@@ -123,22 +151,26 @@ export default function PlayerPage({ params }:{ params:{ id:string }}){
                     <div className="text-2xl font-bold text-green-400">{matchesPlayed}</div>
                     <div className="text-sm text-zinc-400">🎮 Matchs</div>
                   </div>
+                  <div className="text-center p-3 bg-zinc-900/60 rounded-lg">
+                    <div className="text-2xl font-bold text-purple-400">{totalMinutes}'</div>
+                    <div className="text-sm text-zinc-400">⏱️ Temps total</div>
+                  </div>
+                  <div className="text-center p-3 bg-zinc-900/60 rounded-lg">
+                    <div className="text-2xl font-bold text-indigo-400">{avgMinutesPerMatch}'</div>
+                    <div className="text-sm text-zinc-400">📊 Temps moyen</div>
+                  </div>
+                  <div className="text-center p-3 bg-zinc-900/60 rounded-lg">
+                    <div className="text-2xl font-bold text-yellow-400">{totalYellowCards}</div>
+                    <div className="text-sm text-zinc-400">🟨 Cartons J.</div>
+                  </div>
+                  <div className="text-center p-3 bg-zinc-900/60 rounded-lg">
+                    <div className="text-2xl font-bold text-red-400">{totalRedCards}</div>
+                    <div className="text-sm text-zinc-400">🟥 Cartons R.</div>
+                  </div>
                   {p.position === 'GK' && (
                     <div className="text-center p-3 bg-zinc-900/60 rounded-lg">
                       <div className="text-2xl font-bold text-emerald-400">{totalCleanSheets}</div>
                       <div className="text-sm text-zinc-400">🥅 Clean Sheets</div>
-                    </div>
-                  )}
-                  {totalYellowCards > 0 && (
-                    <div className="text-center p-3 bg-zinc-900/60 rounded-lg">
-                      <div className="text-2xl font-bold text-yellow-400">{totalYellowCards}</div>
-                      <div className="text-sm text-zinc-400">🟨 Cartons J.</div>
-                    </div>
-                  )}
-                  {totalRedCards > 0 && (
-                    <div className="text-center p-3 bg-zinc-900/60 rounded-lg">
-                      <div className="text-2xl font-bold text-red-400">{totalRedCards}</div>
-                      <div className="text-sm text-zinc-400">🟥 Cartons R.</div>
                     </div>
                   )}
                 </div>
@@ -181,16 +213,81 @@ export default function PlayerPage({ params }:{ params:{ id:string }}){
             )}
           </div>
 
-          {matchesPlayed > 0 && (
-            <div className="feature-card rounded-2xl p-6 text-sm text-zinc-300">
-              <h3 className="mb-2 text-white font-semibold">Résumé</h3>
-              <p>
-                {p.name} a disputé {matchesPlayed} match{matchesPlayed > 1 ? 's' : ''} avec le Sporting Red Horse, 
-                marquant {totalGoals} but{totalGoals > 1 ? 's' : ''} et délivrant {totalAssists} passe{totalAssists > 1 ? 's' : ''} décisive{totalAssists > 1 ? 's' : ''}.
-                {p.position === 'GK' && totalCleanSheets > 0 && ` En tant que gardien, il a réalisé ${totalCleanSheets} clean sheet${totalCleanSheets > 1 ? 's' : ''}.`}
-              </p>
+          <div className="glass-effect rounded-2xl p-6">
+            <h3 className="mb-4 text-xl font-bold text-white">Notes des Coéquipiers</h3>
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="text-center p-3 bg-zinc-900/60 rounded-lg">
+                <div className="text-3xl font-bold text-yellow-400">{averageRating || '-'}</div>
+                <div className="text-sm text-zinc-400">⭐ Moyenne</div>
+              </div>
+              <div className="text-center p-3 bg-zinc-900/60 rounded-lg">
+                <div className="text-2xl font-bold text-green-400">{bestRating || '-'}</div>
+                <div className="text-sm text-zinc-400">🏆 Meilleure</div>
+              </div>
+              <div className="text-center p-3 bg-zinc-900/60 rounded-lg">
+                <div className="text-2xl font-bold text-orange-400">{worstRating || '-'}</div>
+                <div className="text-sm text-zinc-400">📉 Plus basse</div>
+              </div>
             </div>
-          )}
+            
+            {Object.keys(ratingsByMatch).length > 0 ? (
+              <div className="space-y-3">
+                <h4 className="font-semibold text-white">Historique des notes par match ({Object.keys(ratingsByMatch).length})</h4>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {Object.entries(ratingsByMatch)
+                    .sort(([matchIdA], [matchIdB]) => {
+                      const matchA = matches.find(m => m.id === matchIdA)
+                      const matchB = matches.find(m => m.id === matchIdB)
+                      if (!matchA || !matchB) return 0
+                      return new Date(matchB.date).getTime() - new Date(matchA.date).getTime()
+                    })
+                    .map(([matchId, matchRatings]) => {
+                      const match = matches.find(m => m.id === matchId)
+                      const avgRating = Math.round((matchRatings.reduce((sum, r) => sum + r, 0) / matchRatings.length) * 10) / 10
+                      const bestRating = Math.max(...matchRatings)
+                      const worstRating = Math.min(...matchRatings)
+                      
+                      return (
+                        <div key={matchId} className="p-3 bg-zinc-900/30 rounded-lg text-sm">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="text-zinc-400">
+                              {match ? (
+                                <>
+                                  {new Date(match.date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
+                                  <div className="text-xs">{match.opponent}</div>
+                                </>
+                              ) : (
+                                'Match inconnu'
+                              )}
+                            </div>
+                            <div className="text-xs text-zinc-500">{matchRatings.length} note{matchRatings.length > 1 ? 's' : ''}</div>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-4">
+                              <div className={`font-bold ${
+                                avgRating >= 8 ? 'text-green-400' :
+                                avgRating >= 7 ? 'text-yellow-400' :
+                                avgRating >= 6 ? 'text-orange-400' : 'text-red-400'
+                              }`}>
+                                ⭐ {avgRating}
+                              </div>
+                              <div className="text-green-400">🏆 {bestRating}</div>
+                              <div className="text-orange-400">📉 {worstRating}</div>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-6 text-zinc-500">
+                <div className="text-4xl mb-2">⭐</div>
+                <p>Aucune note reçue pour le moment</p>
+              </div>
+            )}
+          </div>
+
         </div>
       </section>
     </>

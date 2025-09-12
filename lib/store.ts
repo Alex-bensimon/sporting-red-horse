@@ -1,6 +1,6 @@
 import { addDoc, collection, doc, getDoc, getDocs, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore';
 import { auth, db } from '../firebase/client';
-import type { Lineup, Match, MatchPlayerStats, MatchSheet, Player, PlayerRating, Slot, UserMeta } from './types';
+import type { Lineup, Match, MatchPlayerStats, MatchSheet, Player, PlayerRating, PresetData, Slot, UserMeta } from './types';
 
 export function isFirebaseReady(){
   // Basic check: all env present
@@ -264,7 +264,7 @@ export async function closeRatingsForMatch(matchId: string, closedBy: string){
   return { id: matchId }
 }
 
-export async function getPlayerRatings(matchId: string): Promise<PlayerRating[]> {
+export async function getPlayerRatingsForMatch(matchId: string): Promise<PlayerRating[]> {
   if (!isFirebaseReady() || !db) {
     const stored = localStorage.getItem('srh_ratings')
     const ratings = stored ? JSON.parse(stored) : []
@@ -272,6 +272,18 @@ export async function getPlayerRatings(matchId: string): Promise<PlayerRating[]>
   }
 
   const qy = query(collection(db, 'player_ratings'), where('matchId', '==', matchId))
+  const snap = await getDocs(qy)
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as PlayerRating))
+}
+
+export async function getPlayerRatings(playerId: string): Promise<PlayerRating[]> {
+  if (!isFirebaseReady() || !db) {
+    const stored = localStorage.getItem('srh_ratings')
+    const ratings = stored ? JSON.parse(stored) : []
+    return ratings.filter((r: PlayerRating) => r.ratedPlayerId === playerId)
+  }
+
+  const qy = query(collection(db, 'player_ratings'), where('ratedPlayerId', '==', playerId))
   const snap = await getDocs(qy)
   return snap.docs.map(d => ({ id: d.id, ...d.data() } as PlayerRating))
 }
@@ -366,6 +378,16 @@ export async function getPlayerAverageRatings(playerId: string): Promise<{ avera
   return { average: Math.round((sum / ratings.length) * 10) / 10, count: ratings.length }
 }
 
+export async function getAllPlayerRatings(): Promise<PlayerRating[]> {
+  if (!isFirebaseReady() || !db) {
+    const stored = localStorage.getItem('srh_ratings')
+    return stored ? JSON.parse(stored) : []
+  }
+
+  const snap = await getDocs(collection(db, 'player_ratings'))
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as PlayerRating))
+}
+
 export async function syncUserRoleIndex(uid: string, roles: string[] = []): Promise<void> {
   if (!isFirebaseReady() || !db) throw new Error('Firebase non configuré')
   await setDoc(doc(db, 'users_by_uid', uid), { roles }, { merge: true })
@@ -382,32 +404,96 @@ export async function getFormations(): Promise<Record<string, Slot[]>> {
   return formations
 }
 
-export async function getPresets(): Promise<Record<string, string[]>> {
-  if (!isFirebaseReady() || !db) return {}
+export async function getPresets(): Promise<Record<string, PresetData | string[]>> {
+  if (!isFirebaseReady() || !db) {
+    // Fallback local : charger depuis le fichier JSON
+    try {
+      const response = await fetch('/data/presets.json')
+      if (response.ok) {
+        return await response.json()
+      }
+    } catch (error) {
+      console.warn('Impossible de charger les presets locaux:', error)
+    }
+    return {}
+  }
+  
   const snap = await getDocs(collection(db, 'presets'))
   if (snap.empty) return {}
-  const presets: Record<string, string[]> = {}
+  const presets: Record<string, PresetData | string[]> = {}
   snap.docs.forEach(doc => {
-    presets[doc.id] = doc.data().playerIds
+    const data = doc.data()
+    // Support ancien format (tableau) et nouveau format (objet avec starters/subs/absent)
+    if (Array.isArray(data.playerIds)) {
+      presets[doc.id] = data.playerIds
+    } else if (data.starters) {
+      presets[doc.id] = {
+        starters: data.starters || [],
+        subs: data.subs || [],
+        absent: data.absent || []
+      }
+    }
   })
   return presets
 }
 
-export async function savePreset(params: { id: string; formation: string; playerIds: (string | null)[]; bySlot?: Record<string, string | null> }){
+export async function savePreset(params: { 
+  id: string; 
+  formation: string; 
+  playerIds?: (string | null)[]; 
+  bySlot?: Record<string, string | null>;
+  starters?: string[];
+  subs?: string[];
+  absent?: string[];
+}){
   if (!isFirebaseReady() || !db) {
     const raw = localStorage.getItem('srh_presets_store_v1')
     const map = raw ? JSON.parse(raw) : {}
-    map[params.id] = { formation: params.formation, playerIds: params.playerIds, bySlot: params.bySlot || null, createdAt: Date.now() }
+    
+    // Support nouveau format (starters/subs/absent) ou ancien format (playerIds)
+    if (params.starters) {
+      map[params.id] = { 
+        formation: params.formation, 
+        starters: params.starters,
+        subs: params.subs || [],
+        absent: params.absent || [],
+        createdAt: Date.now() 
+      }
+    } else {
+      // Ancien format pour compatibilité
+      map[params.id] = { 
+        formation: params.formation, 
+        playerIds: params.playerIds, 
+        bySlot: params.bySlot || null, 
+        createdAt: Date.now() 
+      }
+    }
+    
     localStorage.setItem('srh_presets_store_v1', JSON.stringify(map))
     return { id: params.id }
   }
+  
   const presetRef = doc(collection(db, 'presets'), params.id)
-  await setDoc(presetRef, {
-    formation: params.formation,
-    playerIds: params.playerIds,
-    bySlot: params.bySlot || null,
-    createdAt: serverTimestamp(),
-  }, { merge: true })
+  
+  // Support nouveau format (starters/subs/absent) ou ancien format (playerIds)
+  if (params.starters) {
+    await setDoc(presetRef, {
+      formation: params.formation,
+      starters: params.starters,
+      subs: params.subs || [],
+      absent: params.absent || [],
+      createdAt: serverTimestamp(),
+    }, { merge: true })
+  } else {
+    // Ancien format pour compatibilité
+    await setDoc(presetRef, {
+      formation: params.formation,
+      playerIds: params.playerIds,
+      bySlot: params.bySlot || null,
+      createdAt: serverTimestamp(),
+    }, { merge: true })
+  }
+  
   return { id: params.id }
 }
 

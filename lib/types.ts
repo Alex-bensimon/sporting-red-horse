@@ -102,3 +102,9 @@ export type UserMeta = {
   roles?: string[]
 }
 
+export type PresetData = {
+  starters: string[]
+  subs: string[]
+  absent: string[]
+}
+

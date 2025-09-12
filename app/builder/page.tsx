@@ -3,7 +3,7 @@ import { useAuth } from '@/lib/auth-context';
 import { createMatchSheet, getFormations, getMatches, getMatchSheet, getPlayers, getPresets } from '@/lib/store';
 import { useEffect, useMemo, useState } from 'react';
 import { FutCard } from '../../components/FutCard';
-import type { Lineup, MatchSheet, Player, Slot } from '../../lib/types';
+import type { Lineup, MatchSheet, Player, Slot, PresetData } from '../../lib/types';
 
 const formationsLocal: Record<string, Slot[]> = {
   '3-2-1': [
@@ -64,7 +64,7 @@ export default function BuilderPage(){
   const [matches,setMatches] = useState<any[]>([])
   const [absentPlayers,setAbsentPlayers] = useState<Set<string>>(new Set())
   const [formations, setFormations] = useState<Record<string, Slot[]>>({})
-  const [presets, setPresets] = useState<Record<string, string[]>>({})
+  const [presets, setPresets] = useState<Record<string, PresetData | string[]>>({})
   const [associating, setAssociating] = useState(false)
 
   useEffect(()=>{
@@ -233,8 +233,16 @@ export default function BuilderPage(){
             if (!preset) return
             const layout = formations[formation] || []
             const next: Lineup = {}
-            layout.forEach((slot, i)=> next[slot.key] = preset[i] || null)
-            setLineup(next)
+            
+            // Support ancien format (tableau) et nouveau format (objet)
+            if (Array.isArray(preset)) {
+              layout.forEach((slot, i)=> next[slot.key] = preset[i] || null)
+              setLineup(next)
+            } else {
+              layout.forEach((slot, i)=> next[slot.key] = preset.starters[i] || null)
+              setLineup(next)
+              setAbsentPlayers(new Set(preset.absent || []))
+            }
               }} className="rounded-lg border border-zinc-600 bg-zinc-800/50 px-3 py-2 text-white">
             <option value="">Preset…</option>
             {Object.keys(presets || {}).map(k=> <option key={k} value={k}>{k}</option>)}

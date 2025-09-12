@@ -1,6 +1,6 @@
 "use client"
-import { getPlayers, getAllMatchPlayerStats, getMatches } from '@/lib/store'
-import type { Player, MatchPlayerStats, Match } from '@/lib/types'
+import { getPlayers, getAllMatchPlayerStats, getMatches, getAllPlayerRatings } from '@/lib/store'
+import type { Player, MatchPlayerStats, Match, PlayerRating } from '@/lib/types'
 import { useEffect, useMemo, useState } from 'react'
 
 type MetricKey = keyof Pick<Player, 'rating' | 'pace' | 'shooting' | 'passing' | 'dribbling' | 'defense' | 'physical'>
@@ -10,18 +10,21 @@ export default function StatsPage(){
   const [metric, setMetric] = useState<MetricKey>('rating')
   const [matchStats, setMatchStats] = useState<MatchPlayerStats[]>([])
   const [matches, setMatches] = useState<Match[]>([])
+  const [playerRatings, setPlayerRatings] = useState<PlayerRating[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(()=>{ 
     async function loadData() {
-      const [playersData, statsData, matchesData] = await Promise.all([
+      const [playersData, statsData, matchesData, ratingsData] = await Promise.all([
         getPlayers(),
         getAllMatchPlayerStats(),
-        getMatches()
+        getMatches(),
+        getAllPlayerRatings()
       ])
       setPlayers(playersData)
       setMatchStats(statsData)
       setMatches(matchesData)
+      setPlayerRatings(ratingsData)
       setLoading(false)
     }
     loadData()
@@ -103,6 +106,93 @@ export default function StatsPage(){
       topAssist
     }
   }, [matchStats, matches, players])
+  
+  const ratingsStats = useMemo(() => {
+    if (playerRatings.length === 0) return null
+    
+    // Grouper par joueur puis par match pour calculer les moyennes par match
+    const playerMatchRatings = playerRatings.reduce((acc, rating) => {
+      if (!acc[rating.ratedPlayerId]) {
+        acc[rating.ratedPlayerId] = {}
+      }
+      if (!acc[rating.ratedPlayerId][rating.matchId]) {
+        acc[rating.ratedPlayerId][rating.matchId] = []
+      }
+      acc[rating.ratedPlayerId][rating.matchId].push(rating.rating)
+      return acc
+    }, {} as Record<string, Record<string, number[]>>)
+    
+    // Calculer les moyennes par match pour chaque joueur
+    const playerMatchAverages = Object.entries(playerMatchRatings).reduce((acc, [playerId, matchRatings]) => {
+      acc[playerId] = Object.values(matchRatings).map(ratings => 
+        Math.round((ratings.reduce((sum, r) => sum + r, 0) / ratings.length) * 10) / 10
+      )
+      return acc
+    }, {} as Record<string, number[]>)
+    
+    // Statistiques globales basées sur les moyennes par match
+    const allMatchAverages = Object.values(playerMatchAverages).flat()
+    const totalRatings = playerRatings.length
+    const overallAverage = allMatchAverages.length > 0 ? 
+      Math.round((allMatchAverages.reduce((sum, avg) => sum + avg, 0) / allMatchAverages.length) * 10) / 10 : 0
+    const playersRated = Object.keys(playerMatchAverages).length
+    
+    // Meilleur joueur basé sur la moyenne de ses moyennes par match
+    const bestRatedPlayer = Object.entries(playerMatchAverages)
+      .reduce((best, [playerId, matchAvgs]) => {
+        const playerAverage = Math.round((matchAvgs.reduce((sum, avg) => sum + avg, 0) / matchAvgs.length) * 10) / 10
+        if (playerAverage > (best?.average || 0)) {
+          const player = players.find(p => p.id === playerId)
+          return player ? { player, average: playerAverage, count: matchAvgs.length } : best
+        }
+        return best
+      }, null as { player: Player; average: number; count: number } | null)
+    
+    return {
+      totalRatings,
+      overallAverage,
+      playersRated,
+      bestRatedPlayer
+    }
+  }, [playerRatings, players])
+  
+  const topRatedPlayers = useMemo(() => {
+    if (playerRatings.length === 0) return []
+    
+    // Grouper par joueur puis par match
+    const playerMatchRatings = playerRatings.reduce((acc, rating) => {
+      if (!acc[rating.ratedPlayerId]) {
+        acc[rating.ratedPlayerId] = {}
+      }
+      if (!acc[rating.ratedPlayerId][rating.matchId]) {
+        acc[rating.ratedPlayerId][rating.matchId] = []
+      }
+      acc[rating.ratedPlayerId][rating.matchId].push(rating.rating)
+      return acc
+    }, {} as Record<string, Record<string, number[]>>)
+    
+    // Calculer les moyennes par match puis la moyenne générale
+    return Object.entries(playerMatchRatings)
+      .map(([playerId, matchRatings]) => {
+        const player = players.find(p => p.id === playerId)
+        if (!player) return null
+        
+        const matchAverages = Object.values(matchRatings).map(ratings => 
+          Math.round((ratings.reduce((sum, r) => sum + r, 0) / ratings.length) * 10) / 10
+        )
+        const playerAverage = Math.round((matchAverages.reduce((sum, avg) => sum + avg, 0) / matchAverages.length) * 10) / 10
+        
+        return {
+          ...player,
+          averageRating: playerAverage,
+          ratingsCount: Object.values(matchRatings).reduce((sum, ratings) => sum + ratings.length, 0),
+          matchesRated: matchAverages.length
+        }
+      })
+      .filter(Boolean)
+      .sort((a, b) => (b?.averageRating || 0) - (a?.averageRating || 0))
+      .slice(0, 10)
+  }, [playerRatings, players])
 
   const metrics: { key: MetricKey; label: string; emoji: string }[] = [
     { key: 'rating', label: 'Note', emoji: '📊' },
@@ -207,6 +297,35 @@ export default function StatsPage(){
             </div>
           )}
 
+          {/* Statistiques des notes */}
+          {ratingsStats && (
+            <div className="glass-effect rounded-2xl p-6 mb-8">
+              <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+                ⭐ Notes des Joueurs
+              </h3>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+                <StatTile title="Notes données" value={ratingsStats.totalRatings} subtitle="Total" icon="📝" />
+                <StatTile title="Moyenne générale" value={ratingsStats.overallAverage} subtitle="Sur 10" icon="⭐" />
+                {ratingsStats.bestRatedPlayer && (
+                  <>
+                    <div className="feature-card rounded-xl p-4">
+                      <div className="text-sm text-zinc-400 mb-2 font-medium flex items-center gap-2">
+                        🏆 Meilleur joueur
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="text-2xl font-bold text-redhorse-gold">{ratingsStats.bestRatedPlayer.average}</div>
+                        <div>
+                          <div className="text-white font-semibold">{ratingsStats.bestRatedPlayer.player.name}</div>
+                          <div className="text-xs text-zinc-400">{ratingsStats.bestRatedPlayer.count} notes</div>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Statistiques individuelles des joueurs */}
           <div className="glass-effect rounded-2xl p-6 mb-8">
             <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
@@ -273,25 +392,48 @@ export default function StatsPage(){
             </ul>
           </article>
 
-          {/* Averages by metric */}
-          <article className="feature-card rounded-2xl p-6">
-            <h3 className="text-xl font-bold mb-4 text-white">Moyennes par attribut</h3>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {metrics.map(m=> (
-                <div key={m.key} className="glass-effect rounded-lg p-4">
-                  <div className="text-sm text-zinc-400 mb-1">{m.emoji} {m.label}</div>
-                  <div className="text-2xl font-bold text-redhorse-gold">
-                    {m.key==='rating' ? overview.avgRating :
-                     m.key==='pace' ? overview.avgPace :
-                     m.key==='shooting' ? overview.avgShooting :
-                     m.key==='passing' ? overview.avgPassing :
-                     m.key==='dribbling' ? overview.avgDribbling :
-                     m.key==='defense' ? overview.avgDefense : overview.avgPhysical}
+          {/* Top rated players */}
+          {topRatedPlayers.length > 0 ? (
+            <article className="feature-card rounded-2xl p-6">
+              <h3 className="text-xl font-bold mb-4 text-white">
+                ⭐ Top Joueurs Notés (Performances en match)
+              </h3>
+              <ul className="space-y-3">
+                {topRatedPlayers.map((p, idx)=> p && (
+                  <li key={p.id} className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${idx===0?'bg-gradient-to-r from-yellow-400 to-yellow-600 text-yellow-900': 'bg-zinc-700 text-zinc-200'}`}>{idx+1}</div>
+                    <div className="flex-1">
+                      <div className="font-semibold text-white">{p.name} <span className="text-xs text-zinc-400">({p.position})</span></div>
+                      <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-yellow-400 to-yellow-600" style={{ width: `${Math.min(100, (p.averageRating / 10) * 100)}%` }} />
+                      </div>
+                      <div className="text-xs text-zinc-500 mt-1">{p.matchesRated} match{(p.matchesRated || 0) > 1 ? 's' : ''} • {p.ratingsCount} note{p.ratingsCount > 1 ? 's' : ''}</div>
+                    </div>
+                    <div className="w-12 text-right font-bold text-yellow-400">{p.averageRating}</div>
+                  </li>
+                ))}
+              </ul>
+            </article>
+          ) : (
+            <article className="feature-card rounded-2xl p-6">
+              <h3 className="text-xl font-bold mb-4 text-white">Moyennes par attribut</h3>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {metrics.map(m=> (
+                  <div key={m.key} className="glass-effect rounded-lg p-4">
+                    <div className="text-sm text-zinc-400 mb-1">{m.emoji} {m.label}</div>
+                    <div className="text-2xl font-bold text-redhorse-gold">
+                      {m.key==='rating' ? overview.avgRating :
+                       m.key==='pace' ? overview.avgPace :
+                       m.key==='shooting' ? overview.avgShooting :
+                       m.key==='passing' ? overview.avgPassing :
+                       m.key==='dribbling' ? overview.avgDribbling :
+                       m.key==='defense' ? overview.avgDefense : overview.avgPhysical}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </article>
+                ))}
+              </div>
+            </article>
+          )}
         </div>
       </section>
     </>

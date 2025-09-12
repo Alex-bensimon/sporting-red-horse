@@ -1,6 +1,6 @@
 "use client"
 import { useAuth } from '@/lib/auth-context'
-import { getMatches, getMatchSheet, getPlayerRatings, getPlayers, savePlayerRating } from '@/lib/store'
+import { getMatches, getMatchSheet, getPlayerRatingsForMatch, getPlayers, savePlayerRating } from '@/lib/store'
 import type { Match, MatchSheet, Player, PlayerRating } from '@/lib/types'
 import { useEffect, useState } from 'react'
 
@@ -20,7 +20,7 @@ export default function RatingsClient({ matchId }: { matchId: string }) {
         getMatches(),
         getPlayers(),
         getMatchSheet(matchId),
-        getPlayerRatings(matchId)
+        getPlayerRatingsForMatch(matchId)
       ])
       
       const currentMatch = matches.find(m => m.id === matchId)

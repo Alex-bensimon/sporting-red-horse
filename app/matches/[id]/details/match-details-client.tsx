@@ -1,6 +1,6 @@
 "use client"
 import { useAuth } from '@/lib/auth-context'
-import { closeRatingsForMatch, getMatches, getMatchPlayerStats, getMatchSheet, getPlayerRatings, getPlayers } from '@/lib/store'
+import { closeRatingsForMatch, getMatches, getMatchPlayerStats, getMatchSheet, getPlayerRatingsForMatch, getPlayers } from '@/lib/store'
 import type { Match, MatchPlayerStats, MatchSheet, Player, PlayerRating } from '@/lib/types'
 import { useEffect, useState } from 'react'
 
@@ -19,7 +19,7 @@ export default function MatchDetailsClient({ matchId }: { matchId: string }) {
         const [allMatches, sheet, playerRatings, allPlayers, stats] = await Promise.all([
           getMatches(),
           getMatchSheet(matchId),
-          getPlayerRatings(matchId),
+          getPlayerRatingsForMatch(matchId),
           getPlayers(),
           getMatchPlayerStats(matchId)
         ])
@@ -311,7 +311,7 @@ function CloseRatingsButton({ matchId, currentPlayerId }: { matchId: string; cur
   useEffect(() => {
     async function checkEligibility(){
       try{
-        const votes = await getPlayerRatings(matchId)
+        const votes = await getPlayerRatingsForMatch(matchId)
         const distinctRaters = new Set(votes.map(v=> v.raterPlayerId))
         setEligible(distinctRaters.size >= 7)
       }catch{

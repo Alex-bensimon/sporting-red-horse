@@ -1,4 +1,32 @@
 {
-  "TOP_TEAM": ["pGK","pD1","pD2","pD3","pM1","pM2","pF1"],
-  "ROTATION": ["pGK","pD1","pD2","pD3","pM2","pM3","pF2"]
+  "TOP_TEAM": {
+    "starters": ["pGK","pD1","pD2","pD3","pM1","pM2","pF1"],
+    "subs": ["pM3","pF2","pD4"],
+    "absent": []
+  },
+  "ROTATION": {
+    "starters": ["pGK","pD1","pD2","pD3","pM2","pM3","pF2"],
+    "subs": ["pM1","pF1","pD4","pM4"],
+    "absent": []
+  },
+  "DÉFENSE_SOLIDE": {
+    "starters": ["pGK","pD1","pD2","pD3","pD4","pM1","pM2"],
+    "subs": ["pF1","pF2","pM3"],
+    "absent": []
+  },
+  "ATTAQUE_PUISSANTE": {
+    "starters": ["pGK","pD1","pD2","pM1","pM2","pF1","pF2"],
+    "subs": ["pD3","pF3","pM3"],
+    "absent": []
+  },
+  "MATCH_IMPORTANT": {
+    "starters": ["pGK","pD1","pD2","pD3","pM1","pM2","pF1"],
+    "subs": ["pF2","pM3","pD4","pF3"],
+    "absent": []
+  },
+  "REPOS_CADRES": {
+    "starters": ["pGK","pD3","pD4","pM3","pM4","pF2","pF3"],
+    "subs": ["pD2","pM5"],
+    "absent": ["pM1","pF1"]
+  }
 }
