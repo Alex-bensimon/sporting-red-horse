@@ -101,7 +101,7 @@ export default function Builder({ matchId, onLineupSaved }:{ matchId: string; on
         matchId, 
         subs, 
         absentPlayers: Array.from(absentPlayers) 
-      })
+      }, currentPlayer.id)
       
       // 2. Enregistrer le preset avec le nouveau format
       const starters = Object.values(lineup).filter(Boolean) as string[]
@@ -222,7 +222,7 @@ export default function Builder({ matchId, onLineupSaved }:{ matchId: string; on
           {Object.keys(presets || {}).map(k=> <option key={k} value={k}>{k}</option>)}
         </select>
         <button className="rounded-md bg-zinc-700 px-3 py-2" onClick={async()=>{
-          const { id } = await saveLineup({ name, formation, lineup, matchId, subs, absentPlayers: Array.from(absentPlayers) })
+          const { id } = await saveLineup({ name, formation, lineup, matchId, subs, absentPlayers: Array.from(absentPlayers) }, currentPlayer?.id || '')
           // Enregistrer aussi un preset avec le nouveau format
           const starters = Object.values(lineup).filter(Boolean) as string[]
           await savePreset({ 

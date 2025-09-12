@@ -97,7 +97,7 @@ export default function MatchDetailsClient({ matchId }: { matchId: string }) {
               })} • {match.time || '19:00'}
             </div>
             <div className="text-zinc-400">
-              SRH vs {match.opponent}
+              {match.home ? `SRH vs ${match.opponent}` : `${match.opponent} vs SRH`}
             </div>
           </div>
         </div>
@@ -114,13 +114,27 @@ export default function MatchDetailsClient({ matchId }: { matchId: string }) {
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-r from-redhorse-gold to-redhorse-red rounded-full flex items-center justify-center text-sm font-bold">
-                    SRH
-                  </div>
-                  <span className="text-lg font-bold">vs</span>
-                  <div className="w-8 h-8 bg-zinc-700 rounded-full flex items-center justify-center text-xs font-bold">
-                    {match.opponent.split(' ').map(w => w[0]).join('').slice(0,2)}
-                  </div>
+                  {match.home ? (
+                    <>
+                      <div className="w-8 h-8 rounded-full overflow-hidden bg-white">
+                        <img src="/logo.webp" alt="SRH" className="w-full h-full object-cover" />
+                      </div>
+                      <span className="text-lg font-bold">vs</span>
+                      <div className="w-8 h-8 bg-zinc-700 rounded-full flex items-center justify-center text-xs font-bold">
+                        {match.opponent.split(' ').map(w => w[0]).join('').slice(0,2)}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-8 h-8 bg-zinc-700 rounded-full flex items-center justify-center text-xs font-bold">
+                        {match.opponent.split(' ').map(w => w[0]).join('').slice(0,2)}
+                      </div>
+                      <span className="text-lg font-bold">vs</span>
+                      <div className="w-8 h-8 rounded-full overflow-hidden bg-white">
+                        <img src="/logo.webp" alt="SRH" className="w-full h-full object-cover" />
+                      </div>
+                    </>
+                  )}
                   <span className="text-lg font-semibold text-white">{match.opponent}</span>
                 </div>
                 

@@ -263,3 +263,19 @@ body::before {
 .marquee__track{display:flex; align-items:center; gap:80px; width:max-content; animation: marquee-scroll 25s linear infinite}
 .marquee:hover .marquee__track{animation-play-state:paused}
 @keyframes marquee-scroll{from{transform:translateX(0)} to{transform:translateX(-50%)}}
+
+/* Force cursor pointer on all clickable elements */
+a, button, [role="button"], [onclick], .cursor-pointer,
+input[type="submit"], input[type="button"], input[type="reset"],
+select, .btn-primary, .btn-secondary, .feature-card,
+.fut-card__detail, .slot-remove {
+  cursor: pointer !important;
+}
+
+/* Specific cursor styles for interactive elements */
+a:hover, button:hover, [role="button"]:hover, [onclick]:hover,
+.cursor-pointer:hover, input[type="submit"]:hover, 
+input[type="button"]:hover, input[type="reset"]:hover,
+select:hover, .btn-primary:hover, .btn-secondary:hover {
+  cursor: pointer !important;
+}

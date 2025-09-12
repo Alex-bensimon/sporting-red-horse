@@ -3,7 +3,7 @@
   { "playerId": "pD1", "name": "Rémy", "email": "", "isFirstConnection": true, "uid": null, "roles": ["captain"] },
   { "playerId": "pD2", "name": "Pierre", "email": "", "isFirstConnection": true, "uid": null, "roles": [] },
   { "playerId": "pD3", "name": "Hugo", "email": "", "isFirstConnection": true, "uid": null, "roles": ["captain"] },
-  { "playerId": "pM1", "name": "Maxime", "email": "", "isFirstConnection": true, "uid": null, "roles": [] },
+  { "playerId": "pM1", "name": "Maxime D", "email": "", "isFirstConnection": true, "uid": null, "roles": [] },
   { "playerId": "pM2", "name": "Loick", "email": "", "isFirstConnection": true, "uid": null, "roles": [] },
   { "playerId": "pM3", "name": "Paul", "email": "", "isFirstConnection": true, "uid": null, "roles": [] },
   { "playerId": "pF1", "name": "Alex", "email": "", "isFirstConnection": true, "uid": null, "roles": ["captain"] },
@@ -12,6 +12,7 @@
   { "playerId": "pM4", "name": "Jules", "email": "", "isFirstConnection": true, "uid": null, "roles": [] },
   { "playerId": "pM5", "name": "Elias", "email": "", "isFirstConnection": true, "uid": null, "roles": [] },
   { "playerId": "pF3", "name": "Benjamin", "email": "", "isFirstConnection": true, "uid": null, "roles": [] },
-  { "playerId": "pF4", "name": "Arthur", "email": "", "isFirstConnection": true, "uid": null, "roles": [] }
+  { "playerId": "pF4", "name": "Arthur", "email": "", "isFirstConnection": true, "uid": null, "roles": [] },
+  { "playerId": "pM6", "name": "Maxime", "email": "", "isFirstConnection": true, "uid": null, "roles": [] }
 ]
 

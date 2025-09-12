@@ -34,18 +34,19 @@ service cloud.firestore {
     }
     match /match_sheets/{docId} {
       allow read: if true;
-      // Only captains can create/update match sheets
-      allow create, update: if isAuthed() && isCaptain(request.auth.uid);
-      allow delete: if false;
+      // Only captains can create/update/delete match sheets
+      allow create, update, delete: if isAuthed() && isCaptain(request.auth.uid);
     }
     match /player_ratings/{docId} {
       allow read: if true;
       // allow write if authenticated - match date validation is handled in the application
-      allow write: if isAuthed() &&
+      allow create, update: if isAuthed() &&
         ('matchId' in request.resource.data) &&
         ('ratedPlayerId' in request.resource.data) &&
         ('raterPlayerId' in request.resource.data) &&
         ('rating' in request.resource.data);
+      // Only captains can delete player ratings
+      allow delete: if isAuthed() && isCaptain(request.auth.uid);
     }
 
     // Presets: allow captains to create/update
@@ -58,16 +59,14 @@ service cloud.firestore {
     // Match player stats: captains only
     match /match_player_stats/{docId} {
       allow read: if true;
-      allow create, update: if isAuthed() && isCaptain(request.auth.uid);
-      allow delete: if false;
+      allow create, update, delete: if isAuthed() && isCaptain(request.auth.uid);
     }
 
     // Matches: lecture publique, pas d'écriture côté client (sauf capitaines)
     match /matches/{docId} {
       allow read: if true;
-      // Only captains can create/update matches
-      allow create, update: if isAuthed() && isCaptain(request.auth.uid);
-      allow delete: if false;
+      // Only captains can create/update/delete matches
+      allow create, update, delete: if isAuthed() && isCaptain(request.auth.uid);
     }
 
     // Users meta: l'utilisateur connecté peut créer/mettre à jour son propre doc meta

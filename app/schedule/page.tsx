@@ -1,6 +1,6 @@
 "use client"
 import { useAuth } from '@/lib/auth-context'
-import { createMatch, getMatches, getMatchSheet } from '@/lib/store'
+import { createMatch, deleteMatch, getMatches, getMatchSheet, updateMatch } from '@/lib/store'
 import type { Match, MatchSheet } from '@/lib/types'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -12,6 +12,8 @@ export default function SchedulePage(){
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
   const [draft, setDraft] = useState({ date: '', time: '19:00', opponent: '', home: true, location: '', competition: '' })
+  const [editingMatch, setEditingMatch] = useState<Match | null>(null)
+  const [showConfirmDelete, setShowConfirmDelete] = useState<string | null>(null)
   
   // Valeurs uniques pour l'autocomplétion
   const uniqueOpponents = useMemo(() => [...new Set(matches.map(m => m.opponent).filter(Boolean))], [matches])
@@ -58,7 +60,7 @@ export default function SchedulePage(){
       lines.push(`DTSTAMP:${fmt(new Date())}`)
       lines.push(`DTSTART:${fmt(start)}`)
       lines.push(`DTEND:${fmt(end)}`)
-      lines.push(`SUMMARY:SRH vs ${m.opponent}${m.home?' (Domicile)':' (Extérieur)'}`)
+      lines.push(`SUMMARY:${m.home ? `SRH vs ${m.opponent}` : `${m.opponent} vs SRH`}${m.home?' (Domicile)':' (Extérieur)'}`)
       lines.push(`LOCATION:${m.location}`)
       if (m.competition) lines.push(`CATEGORIES:${m.competition}`)
       lines.push('END:VEVENT')
@@ -117,9 +119,9 @@ export default function SchedulePage(){
             </div>
           </div>
 
-          {isCaptain && showAdd && (
+          {isCaptain && (showAdd || editingMatch) && (
             <div className="glass-effect rounded-2xl p-6 mb-8">
-              <h3 className="text-xl font-bold text-white mb-4">Nouveau match</h3>
+              <h3 className="text-xl font-bold text-white mb-4">{editingMatch ? 'Modifier le match' : 'Nouveau match'}</h3>
               <div className="grid gap-3 sm:grid-cols-2">
                 <input 
                   type="date" 
@@ -184,10 +186,14 @@ export default function SchedulePage(){
                 <button className="btn-primary rounded-lg px-6 py-3" onClick={async()=>{
                   const payload = { ...draft }
                   if (!payload.date || !payload.opponent || !payload.location){ alert('Champs requis manquants'); return }
-                  await createMatch(payload as any)
-                  const ms = await getMatches(); setMatches(ms); setShowAdd(false); setDraft({ date: '', time: '19:00', opponent: '', home: true, location: '', competition: '' })
+                  if (editingMatch) {
+                    await updateMatch(editingMatch.id, payload as any)
+                  } else {
+                    await createMatch(payload as any)
+                  }
+                  const ms = await getMatches(); setMatches(ms); setShowAdd(false); setEditingMatch(null); setDraft({ date: '', time: '19:00', opponent: '', home: true, location: '', competition: '' })
                 }}>Enregistrer</button>
-                <button className="btn-secondary rounded-lg px-6 py-3" onClick={()=> setShowAdd(false)}>Annuler</button>
+                <button className="btn-secondary rounded-lg px-6 py-3" onClick={()=> { setShowAdd(false); setEditingMatch(null) }}>Annuler</button>
               </div>
               <style jsx>{`
                 .input{ border-radius:.5rem; border:1px solid rgb(63 63 70); background:rgba(24,24,27,.5); padding:.75rem 1rem; color:white; }
@@ -204,8 +210,12 @@ export default function SchedulePage(){
             const isPast = new Date(m.date) < new Date()
             
             return (
-              <article key={m.id} className="feature-card rounded-2xl p-6 group relative cursor-pointer hover:scale-105 transition-transform" onClick={() => window.location.href = `/matches/${m.id}/details`}>
-                <div className="flex items-start justify-between mb-4">
+              <article 
+                key={m.id} 
+                className="feature-card rounded-2xl p-6 group relative hover:scale-105 transition-transform cursor-pointer"
+                onClick={() => window.location.href = `/matches/${m.id}/details`}
+              >
+                <div className="relative mb-4">
                   <div className="space-y-1">
                     <div className="text-sm text-redhorse-gold font-medium">
                       {new Date(m.date).toLocaleDateString('fr-FR',{weekday:'long', day:'numeric', month:'long'})}
@@ -214,20 +224,50 @@ export default function SchedulePage(){
                       {m.time||'19:00'}
                     </div>
                   </div>
-                  <div className={`px-3 py-1 rounded-full text-xs font-medium ${m.home ? 'bg-redhorse-gold/20 text-redhorse-gold' : 'bg-redhorse-red/20 text-redhorse-red'}`}>
-                    {m.home ? '🏠 Domicile' : '✈️ Extérieur'}
+                  <div className="absolute top-0 right-0 flex flex-col items-end gap-2">
+                    <div className={`px-3 py-1 rounded-full text-xs font-medium ${m.home ? 'bg-redhorse-gold/20 text-redhorse-gold' : 'bg-redhorse-red/20 text-redhorse-red'}`}>
+                      {m.home ? '🏠 Domicile' : '✈️ Extérieur'}
+                    </div>
+                    {m.competition && (
+                      <div className="px-3 py-1 bg-zinc-800 text-zinc-300 rounded-full text-xs font-medium">
+                        🏆 {m.competition}
+                      </div>
+                    )}
+                    {isPast ? (
+                      <div className="px-2 py-1 bg-green-600/20 text-green-400 rounded-full text-xs font-medium">
+                        Terminé
+                      </div>
+                    ) : hasSheet && (
+                      <div className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-xs font-medium">
+                        ✅ Feuille validée
+                      </div>
+                    )}
                   </div>
                 </div>
                 
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-r from-redhorse-gold to-redhorse-red rounded-full flex items-center justify-center text-sm font-bold">
-                      SRH
-                    </div>
-                    <span className="text-lg font-bold">vs</span>
-                    <div className="w-8 h-8 bg-zinc-700 rounded-full flex items-center justify-center text-xs font-bold">
-                      {m.opponent.split(' ').map(w => w[0]).join('').slice(0,2)}
-                    </div>
+                    {m.home ? (
+                      <>
+                        <div className="w-8 h-8 rounded-full overflow-hidden bg-white">
+                          <img src="/logo.webp" alt="SRH" className="w-full h-full object-cover" />
+                        </div>
+                        <span className="text-lg font-bold">vs</span>
+                        <div className="w-8 h-8 bg-zinc-700 rounded-full flex items-center justify-center text-xs font-bold">
+                          {m.opponent.split(' ').map(w => w[0]).join('').slice(0,2)}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-8 h-8 bg-zinc-700 rounded-full flex items-center justify-center text-xs font-bold">
+                          {m.opponent.split(' ').map(w => w[0]).join('').slice(0,2)}
+                        </div>
+                        <span className="text-lg font-bold">vs</span>
+                        <div className="w-8 h-8 rounded-full overflow-hidden bg-white">
+                          <img src="/logo.webp" alt="SRH" className="w-full h-full object-cover" />
+                        </div>
+                      </>
+                    )}
                   </div>
                   
                   <h3 className="text-xl font-bold text-white group-hover:text-redhorse-gold transition-colors">
@@ -242,59 +282,99 @@ export default function SchedulePage(){
                     {m.location}
                   </div>
                   
-                  {m.competition && (
-                    <div className="inline-block px-3 py-1 bg-zinc-800 text-zinc-300 rounded-full text-xs font-medium">
-                      🏆 {m.competition}
-                    </div>
-                  )}
                   
-                  <div className="flex items-center justify-between pt-2 border-t border-zinc-700/50" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex items-center gap-2">
-                      {hasSheet && (
-                        <span className="flex items-center gap-1 text-green-400 text-xs">
-                          <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                          Feuille validée
-                        </span>
-                      )}
-                    </div>
+                  <div className="pt-2 border-t border-zinc-700/50">
                     
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center gap-3 flex-wrap">
                       <a
                         href={`/matches/${m.id}/details`}
-                        className="text-xs font-medium text-redhorse-gold hover:text-redhorse-gold/80 transition-colors"
                         onClick={(e) => e.stopPropagation()}
+                        className="text-xs font-medium text-redhorse-gold border border-redhorse-gold/30 rounded-md px-2 py-1 hover:bg-redhorse-gold/10 hover:border-redhorse-gold transition-all cursor-pointer"
                       >
                         📋 Détails
                       </a>
                       <a
                         href={`/matches/${m.id}`}
-                        className="text-xs font-medium text-zinc-400 hover:text-zinc-200 transition-colors"
                         onClick={(e) => e.stopPropagation()}
+                        className="text-xs font-medium text-zinc-400 border border-zinc-600 rounded-md px-2 py-1 hover:bg-zinc-700/50 hover:text-zinc-200 hover:border-zinc-500 transition-all cursor-pointer"
                       >
                         ⚡ Composer
                       </a>
                       {isPast && hasSheet && isAuthenticated && (
                         <a
                           href={`/matches/${m.id}/ratings`}
-                          className="text-xs font-medium text-blue-400 hover:text-blue-300 transition-colors"
                           onClick={(e) => e.stopPropagation()}
+                          className="text-xs font-medium text-blue-400 border border-blue-400/30 rounded-md px-2 py-1 hover:bg-blue-400/10 hover:border-blue-400 transition-all cursor-pointer"
                         >
                           ⭐ Noter
                         </a>
+                      )}
+                      {isCaptain && (
+                        <>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setEditingMatch(m)
+                              setDraft({
+                                date: m.date,
+                                time: m.time || '19:00',
+                                opponent: m.opponent,
+                                home: m.home,
+                                location: m.location,
+                                competition: m.competition || ''
+                              })
+                            }}
+                            className="text-xs font-medium text-yellow-400 border border-yellow-400/30 rounded-md px-2 py-1 hover:bg-yellow-400/10 hover:border-yellow-400 transition-all cursor-pointer"
+                          >
+                            ✏️ Modifier
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setShowConfirmDelete(m.id)
+                            }}
+                            className="text-xs font-medium text-red-400 border border-red-400/30 rounded-md px-2 py-1 hover:bg-red-400/10 hover:border-red-400 transition-all cursor-pointer"
+                          >
+                            🗑️ Supprimer
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>
                 </div>
                 
-                {isPast && (
-                  <div className="absolute top-2 left-2 px-2 py-1 bg-zinc-800/80 text-zinc-400 rounded-full text-xs">
-                    Terminé
-                  </div>
-                )}
               </article>
             )
           })}
         </div>
+        
+        {showConfirmDelete && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowConfirmDelete(null)}>
+            <div className="bg-zinc-900 p-6 rounded-xl max-w-md" onClick={(e) => e.stopPropagation()}>
+              <h3 className="text-xl font-bold text-white mb-4">Confirmer la suppression</h3>
+              <p className="text-zinc-400 mb-6">Êtes-vous sûr de vouloir supprimer ce match ? Cette action est irréversible.</p>
+              <div className="flex gap-3">
+                <button
+                  className="btn-primary bg-red-600 hover:bg-red-700 rounded-lg px-6 py-3"
+                  onClick={async () => {
+                    await deleteMatch(showConfirmDelete)
+                    const ms = await getMatches()
+                    setMatches(ms)
+                    setShowConfirmDelete(null)
+                  }}
+                >
+                  Supprimer
+                </button>
+                <button
+                  className="btn-secondary rounded-lg px-6 py-3"
+                  onClick={() => setShowConfirmDelete(null)}
+                >
+                  Annuler
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         
         {filteredMatches.length === 0 && (
           <div className="text-center py-16">
