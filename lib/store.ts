@@ -463,66 +463,52 @@ export async function syncUserRoleIndex(uid: string, roles: string[]): Promise<v
   await setDoc(ref, { roles, updatedAt: serverTimestamp() })
 }
 
-// Formations - static data for now, could be moved to Firestore later
+// Formations - load from static JSON file
 export async function getFormations(): Promise<Record<string, Slot[]>> {
-  // Return common football formations as slots
-  const formations: Record<string, Slot[]> = {
-    'f433': [
-      { key: 'gk1', x: 50, y: 10, position: 'GK' }, // GK
-      { key: 'lb1', x: 20, y: 30, position: 'DEF' }, // LB
-      { key: 'cb1', x: 40, y: 30, position: 'DEF' }, // CB
-      { key: 'cb2', x: 60, y: 30, position: 'DEF' }, // CB
-      { key: 'rb1', x: 80, y: 30, position: 'DEF' }, // RB
-      { key: 'cm1', x: 30, y: 55, position: 'MID' }, // CM
-      { key: 'cm2', x: 50, y: 50, position: 'MID' }, // CM
-      { key: 'cm3', x: 70, y: 55, position: 'MID' }, // CM
-      { key: 'lw1', x: 25, y: 80, position: 'FWD' }, // LW
-      { key: 'st1', x: 50, y: 85, position: 'FWD' }, // ST
-      { key: 'rw1', x: 75, y: 80, position: 'FWD' }, // RW
-    ],
-    'f442': [
-      { key: 'gk1', x: 50, y: 10, position: 'GK' }, // GK
-      { key: 'lb1', x: 20, y: 30, position: 'DEF' }, // LB
-      { key: 'cb1', x: 40, y: 30, position: 'DEF' }, // CB
-      { key: 'cb2', x: 60, y: 30, position: 'DEF' }, // CB
-      { key: 'rb1', x: 80, y: 30, position: 'DEF' }, // RB
-      { key: 'lm1', x: 20, y: 60, position: 'MID' }, // LM
-      { key: 'cm1', x: 40, y: 55, position: 'MID' }, // CM
-      { key: 'cm2', x: 60, y: 55, position: 'MID' }, // CM
-      { key: 'rm1', x: 80, y: 60, position: 'MID' }, // RM
-      { key: 'st1', x: 40, y: 85, position: 'FWD' }, // ST
-      { key: 'st2', x: 60, y: 85, position: 'FWD' }, // ST
-    ],
-    'f352': [
-      { key: 'gk1', x: 50, y: 10, position: 'GK' }, // GK
-      { key: 'cb1', x: 35, y: 30, position: 'DEF' }, // CB
-      { key: 'cb2', x: 50, y: 25, position: 'DEF' }, // CB
-      { key: 'cb3', x: 65, y: 30, position: 'DEF' }, // CB
-      { key: 'lwb1', x: 15, y: 60, position: 'MID' }, // LWB
-      { key: 'cm1', x: 35, y: 55, position: 'MID' }, // CM
-      { key: 'cm2', x: 50, y: 50, position: 'MID' }, // CM
-      { key: 'cm3', x: 65, y: 55, position: 'MID' }, // CM
-      { key: 'rwb1', x: 85, y: 60, position: 'MID' }, // RWB
-      { key: 'st1', x: 40, y: 85, position: 'FWD' }, // ST
-      { key: 'st2', x: 60, y: 85, position: 'FWD' }, // ST
-    ]
-  }
+  // Import the formations from the JSON file
+  const formationsModule = await import('@/data/formations.json')
+  const formationsData = formationsModule.default
+  
+  // Convert position 'ATT' to 'FWD' to match the Player type
+  const formations: Record<string, Slot[]> = {}
+  Object.entries(formationsData).forEach(([key, slots]) => {
+    formations[key] = (slots as any[]).map(slot => ({
+      ...slot,
+      position: slot.position === 'ATT' ? 'FWD' : slot.position
+    }))
+  })
   
   return formations
 }
 
-// Get presets - wrapper around existing function, returns as Record for compatibility
+// Get presets - load from static JSON file and combine with Firestore presets
 export async function getPresets(matchId?: string): Promise<Record<string, PresetData | string[]>> {
-  let presetsList: any[]
-  if (matchId) {
-    presetsList = await getPresetsForMatch(matchId)
-  } else {
-    presetsList = await getGlobalPresets()
+  // Load static presets from JSON file
+  const presetsModule = await import('@/data/presets.json')
+  const staticPresets = presetsModule.default
+  
+  // Get Firestore presets
+  let firestorePresets: any[] = []
+  try {
+    if (matchId) {
+      firestorePresets = await getPresetsForMatch(matchId)
+    } else {
+      firestorePresets = await getGlobalPresets()
+    }
+  } catch (error) {
+    console.warn('Could not load Firestore presets:', error)
   }
   
-  // Convert array to Record format expected by the component
+  // Combine static presets with Firestore presets
   const presetsRecord: Record<string, PresetData | string[]> = {}
-  presetsList.forEach((preset, index) => {
+  
+  // Add static presets
+  Object.entries(staticPresets).forEach(([key, preset]) => {
+    presetsRecord[key] = preset as PresetData
+  })
+  
+  // Add Firestore presets
+  firestorePresets.forEach((preset, index) => {
     const key = preset.name || preset.id || `preset_${index}`
     presetsRecord[key] = preset
   })

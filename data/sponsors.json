@@ -1,10 +1,13 @@
 [
   { "name": "Cochonou", "image": "/sponsors/cochonou.webp" },
-  { "name": "L'Équipe", "image": "/sponsors/equipe.webp" },
   { "name": "Lipton", "image": "/sponsors/lipton.webp" },
   { "name": "HowToBitcoin", "image": "/sponsors/htb.webp" },
   { "name": "Granola", "image": "/sponsors/granola.webp" },
+  { "name": "KFC", "image": "/sponsors/kfc.webp" },
   { "name": "Ricard", "image": "/sponsors/ricard.webp" },
+  { "name": "O'Tacos", "image": "/sponsors/otacos.webp" },
   { "name": "Coca-Cola", "image": "/sponsors/coca.webp" },
-  { "name": "PSG", "image": "/sponsors/psg.webp" }
+  { "name": "PSG", "image": "/sponsors/psg.webp" },
+  { "name": "Durex", "image": "/sponsors/durex.webp" },
+  { "name": "MacDonald's", "image": "/sponsors/macdo.webp" }
 ]

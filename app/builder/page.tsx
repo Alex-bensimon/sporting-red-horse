@@ -5,53 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { FutCard } from '../../components/FutCard';
 import type { Lineup, MatchSheet, Player, Slot, PresetData } from '../../lib/types';
 
-const formationsLocal: Record<string, Slot[]> = {
-  '3-2-1': [
-    { key:'GK', x:50,y:92, position:'GK' },
-    { key:'CB-L', x:25,y:70, position:'DEF' },
-    { key:'CB-C', x:50,y:66, position:'DEF' },
-    { key:'CB-R', x:75,y:70, position:'DEF' },
-    { key:'CM-L', x:35,y:45, position:'MID' },
-    { key:'CM-R', x:65,y:45, position:'MID' },
-    { key:'ST',   x:50,y:18, position:'FWD' },
-  ],
-  '2-3-1': [
-    { key:'GK', x:50,y:92, position:'GK' },
-    { key:'CB-L', x:33,y:70, position:'DEF' },
-    { key:'CB-R', x:67,y:70, position:'DEF' },
-    { key:'CM-L', x:24,y:46, position:'MID' },
-    { key:'CM-C', x:50,y:42, position:'MID' },
-    { key:'CM-R', x:76,y:46, position:'MID' },
-    { key:'ST',   x:50,y:18, position:'FWD' },
-  ],
-  '4-2': [
-    { key:'GK', x:50,y:92, position:'GK' },
-    { key:'LB', x:20,y:72, position:'DEF' },
-    { key:'CB-L', x:38,y:68, position:'DEF' },
-    { key:'CB-R', x:62,y:68, position:'DEF' },
-    { key:'RB', x:80,y:72, position:'DEF' },
-    { key:'ST-L', x:38,y:28, position:'FWD' },
-    { key:'ST-R', x:62,y:28, position:'FWD' },
-  ],
-  '3-3': [
-    { key:'GK', x:50,y:92, position:'GK' },
-    { key:'CB-L', x:30,y:72, position:'DEF' },
-    { key:'CB-C', x:50,y:68, position:'DEF' },
-    { key:'CB-R', x:70,y:72, position:'DEF' },
-    { key:'CM-L', x:32,y:44, position:'MID' },
-    { key:'CM-C', x:50,y:40, position:'MID' },
-    { key:'CM-R', x:68,y:44, position:'MID' },
-  ],
-  '1-4-1': [
-    { key:'GK', x:50,y:92, position:'GK' },
-    { key:'LB', x:28,y:70, position:'DEF' },
-    { key:'CB-L', x:40,y:68, position:'DEF' },
-    { key:'CB-R', x:60,y:68, position:'DEF' },
-    { key:'RB', x:72,y:70, position:'DEF' },
-    { key:'DM', x:50,y:46, position:'MID' },
-    { key:'ST', x:50,y:18, position:'FWD' },
-  ],
-}
+// Formations will be loaded from getFormations() - no more hardcoded data
 
 const STORAGE_KEY = 'srh_lineups_by_match_v1'
 
