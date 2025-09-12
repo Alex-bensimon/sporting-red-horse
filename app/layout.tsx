@@ -1,3 +1,5 @@
+import { AuthProvider } from '@/lib/auth-context'
+import Header from '@/components/Header'
 import type { Metadata } from 'next'
 import './globals.css'
 
@@ -15,31 +17,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="fr" className="dark">
       <body className="bg-black text-zinc-100">
-        <header className="sticky top-0 z-30 glass-effect border-b border-redhorse-gold/20">
-          <div className="container flex items-center justify-between gap-4 py-4">
-            <div className="flex items-center gap-4">
-              <img src="/logo.jpeg" alt="SRH" className="h-12 w-12 rounded-full ring-2 ring-redhorse-gold/30 transition-all duration-300 hover:ring-redhorse-gold/60" />
-              <div>
-                <h1 className="font-bold tracking-wide text-lg text-redhorse-gold">Sporting Red Horse</h1>
-                <p className="text-xs text-zinc-400">Football à 7</p>
-              </div>
-            </div>
-            <nav className="hidden lg:flex items-center gap-8 text-base font-medium">
-              <a href="/" className="text-zinc-300 hover:text-redhorse-gold transition-colors duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-redhorse-gold after:transition-all after:duration-300 hover:after:w-full">Accueil</a>
-              <a href="/schedule" className="text-zinc-300 hover:text-redhorse-gold transition-colors duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-redhorse-gold after:transition-all after:duration-300 hover:after:w-full">Calendrier</a>
-              <a href="/team" className="text-zinc-300 hover:text-redhorse-gold transition-colors duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-redhorse-gold after:transition-all after:duration-300 hover:after:w-full">Équipe</a>
-               <a href="/stats" className="text-zinc-300 hover:text-redhorse-gold transition-colors duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-redhorse-gold after:transition-all after:duration-300 hover:after:w-full">Statistiques</a>
-               <a href="/news" className="text-zinc-300 hover:text-redhorse-gold transition-colors duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-redhorse-gold after:transition-all after:duration-300 hover:after:w-full">Actualités</a>
-              <a href="/guide" className="text-zinc-300 hover:text-redhorse-gold transition-colors duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-redhorse-gold after:transition-all after:duration-300 hover:after:w-full">Guide</a>
-              <a href="/builder" className="btn-primary rounded-lg px-6 py-3 text-white font-semibold">Compositions</a>
-            </nav>
-            <button className="lg:hidden p-3 text-redhorse-gold border border-redhorse-gold/30 rounded-lg hover:bg-redhorse-gold/10 transition-colors">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-          </div>
-        </header>
+        <AuthProvider>
+        <Header />
         <main>{children}</main>
         <footer className="glass-effect border-t border-redhorse-gold/20 mt-16">
           <div className="container py-8">
@@ -71,6 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </div>
         </footer>
+        </AuthProvider>
       </body>
     </html>
   )

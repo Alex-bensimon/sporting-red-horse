@@ -1,6 +1,6 @@
 "use client"
-import { getPlayers } from '@/lib/store'
-import type { Player } from '@/lib/types'
+import { getPlayers, getAllMatchPlayerStats, getMatches } from '@/lib/store'
+import type { Player, MatchPlayerStats, Match } from '@/lib/types'
 import { useEffect, useMemo, useState } from 'react'
 
 type MetricKey = keyof Pick<Player, 'rating' | 'pace' | 'shooting' | 'passing' | 'dribbling' | 'defense' | 'physical'>
@@ -8,8 +8,24 @@ type MetricKey = keyof Pick<Player, 'rating' | 'pace' | 'shooting' | 'passing' |
 export default function StatsPage(){
   const [players, setPlayers] = useState<Player[]>([])
   const [metric, setMetric] = useState<MetricKey>('rating')
+  const [matchStats, setMatchStats] = useState<MatchPlayerStats[]>([])
+  const [matches, setMatches] = useState<Match[]>([])
+  const [loading, setLoading] = useState(true)
 
-  useEffect(()=>{ getPlayers().then(setPlayers) },[])
+  useEffect(()=>{ 
+    async function loadData() {
+      const [playersData, statsData, matchesData] = await Promise.all([
+        getPlayers(),
+        getAllMatchPlayerStats(),
+        getMatches()
+      ])
+      setPlayers(playersData)
+      setMatchStats(statsData)
+      setMatches(matchesData)
+      setLoading(false)
+    }
+    loadData()
+  },[])
 
   const overview = useMemo(()=>{
     const numPlayers = players.length
@@ -34,6 +50,59 @@ export default function StatsPage(){
       bestOverall,
     }
   },[players])
+  
+  const clubStats = useMemo(() => {
+    if (matchStats.length === 0) return null
+    
+    const totalGoals = matchStats.reduce((sum, s) => sum + (s.goals || 0), 0)
+    const totalAssists = matchStats.reduce((sum, s) => sum + (s.assists || 0), 0)
+    const totalYellowCards = matchStats.reduce((sum, s) => sum + (s.yellowCards || 0), 0)
+    const totalRedCards = matchStats.reduce((sum, s) => sum + (s.redCards || 0), 0)
+    const totalCleanSheets = matchStats.reduce((sum, s) => sum + (s.cleanSheet ? 1 : 0), 0)
+    const totalMinutes = matchStats.reduce((sum, s) => sum + (s.minutes || 0), 0)
+    const matchesPlayed = matches.length
+    const playersWithStats = new Set(matchStats.map(s => s.playerId)).size
+    
+    // Top performers
+    const playerGoals = matchStats.reduce((acc, s) => {
+      if (!acc[s.playerId]) acc[s.playerId] = { goals: 0, assists: 0, matches: 0 }
+      acc[s.playerId].goals += s.goals || 0
+      acc[s.playerId].assists += s.assists || 0
+      acc[s.playerId].matches += 1
+      return acc
+    }, {} as Record<string, {goals: number, assists: number, matches: number}>)
+    
+    const topScorer = Object.entries(playerGoals).reduce((best, [playerId, stats]) => {
+      if (stats.goals > (best?.stats.goals || 0)) {
+        const player = players.find(p => p.id === playerId)
+        return player ? { player, stats } : best
+      }
+      return best
+    }, null as {player: Player, stats: {goals: number, assists: number, matches: number}} | null)
+    
+    const topAssist = Object.entries(playerGoals).reduce((best, [playerId, stats]) => {
+      if (stats.assists > (best?.stats.assists || 0)) {
+        const player = players.find(p => p.id === playerId)
+        return player ? { player, stats } : best
+      }
+      return best
+    }, null as {player: Player, stats: {goals: number, assists: number, matches: number}} | null)
+    
+    return {
+      totalGoals,
+      totalAssists,
+      totalYellowCards,
+      totalRedCards,
+      totalCleanSheets,
+      totalMinutes,
+      matchesPlayed,
+      playersWithStats,
+      avgGoalsPerMatch: matchesPlayed > 0 ? (totalGoals / matchesPlayed).toFixed(1) : '0.0',
+      avgAssistsPerMatch: matchesPlayed > 0 ? (totalAssists / matchesPlayed).toFixed(1) : '0.0',
+      topScorer,
+      topAssist
+    }
+  }, [matchStats, matches, players])
 
   const metrics: { key: MetricKey; label: string; emoji: string }[] = [
     { key: 'rating', label: 'Note', emoji: '📊' },
@@ -52,6 +121,14 @@ export default function StatsPage(){
     return list
   },[players, metric])
 
+  if (loading) {
+    return (
+      <section className="container py-16 text-center">
+        <div className="text-zinc-400">Chargement des statistiques...</div>
+      </section>
+    )
+  }
+
   return (
     <>
       <section className="relative py-16">
@@ -66,7 +143,75 @@ export default function StatsPage(){
             </p>
           </div>
 
+          {/* Statistiques globales du club */}
+          {clubStats && (
+            <div className="glass-effect rounded-2xl p-6 mb-8">
+              <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+                🏆 Statistiques du Club
+              </h3>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+                <StatTile title="Buts marqués" value={clubStats.totalGoals} subtitle={`Moy. ${clubStats.avgGoalsPerMatch}/match`} icon="⚽" />
+                <StatTile title="Passes décisives" value={clubStats.totalAssists} subtitle={`Moy. ${clubStats.avgAssistsPerMatch}/match`} icon="🎯" />
+                <StatTile title="Matchs joués" value={clubStats.matchesPlayed} subtitle={`${clubStats.playersWithStats} joueurs actifs`} icon="🏟️" />
+                <StatTile title="Clean Sheets" value={clubStats.totalCleanSheets} subtitle="Défense solide" icon="🥅" />
+              </div>
+              
+              <div className="grid gap-4 md:grid-cols-2">
+                {clubStats.topScorer && (
+                  <div className="feature-card rounded-xl p-4">
+                    <div className="text-sm text-zinc-400 mb-2 font-medium flex items-center gap-2">
+                      ⚽ Meilleur buteur
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-2xl font-bold text-redhorse-gold">{clubStats.topScorer.stats.goals}</div>
+                      <div>
+                        <div className="text-white font-semibold">{clubStats.topScorer.player.name}</div>
+                        <div className="text-xs text-zinc-400">{clubStats.topScorer.stats.matches} matchs</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {clubStats.topAssist && (
+                  <div className="feature-card rounded-xl p-4">
+                    <div className="text-sm text-zinc-400 mb-2 font-medium flex items-center gap-2">
+                      🎯 Meilleur passeur
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-2xl font-bold text-blue-400">{clubStats.topAssist.stats.assists}</div>
+                      <div>
+                        <div className="text-white font-semibold">{clubStats.topAssist.player.name}</div>
+                        <div className="text-xs text-zinc-400">{clubStats.topAssist.stats.matches} matchs</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {(clubStats.totalYellowCards > 0 || clubStats.totalRedCards > 0) && (
+                <div className="grid gap-4 sm:grid-cols-2 mt-4">
+                  {clubStats.totalYellowCards > 0 && (
+                    <div className="feature-card rounded-xl p-4">
+                      <div className="text-sm text-zinc-400 mb-1 font-medium">🟨 Cartons jaunes</div>
+                      <div className="text-2xl font-bold text-yellow-400">{clubStats.totalYellowCards}</div>
+                    </div>
+                  )}
+                  {clubStats.totalRedCards > 0 && (
+                    <div className="feature-card rounded-xl p-4">
+                      <div className="text-sm text-zinc-400 mb-1 font-medium">🟥 Cartons rouges</div>
+                      <div className="text-2xl font-bold text-red-400">{clubStats.totalRedCards}</div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Statistiques individuelles des joueurs */}
           <div className="glass-effect rounded-2xl p-6 mb-8">
+            <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+              👤 Profils Joueurs
+            </h3>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               <StatTile title="Joueurs" value={overview.numPlayers} subtitle="Effectif total" icon="👥" />
               <StatTile title="Note moyenne" value={overview.avgRating} subtitle="Équipe" icon="📊" />
@@ -85,7 +230,7 @@ export default function StatsPage(){
 
           <div className="glass-effect rounded-2xl p-6 mb-8">
             <div className="flex flex-col md:flex-row md:items-center gap-3">
-              <div className="text-sm font-medium text-zinc-300">Classement par métrique:</div>
+              <div className="text-sm font-medium text-zinc-300">Classement par attribut:</div>
               <div className="flex flex-wrap gap-2">
                 {metrics.map(m => (
                   <button
@@ -107,7 +252,7 @@ export default function StatsPage(){
           {/* Leaderboard current metric */}
           <article className="feature-card rounded-2xl p-6">
             <h3 className="text-xl font-bold mb-4 text-white">
-              {metrics.find(m=>m.key===metric)?.emoji} Top {metrics.find(m=>m.key===metric)?.label}
+              {metrics.find(m=>m.key===metric)?.emoji} Top {metrics.find(m=>m.key===metric)?.label} (Attributs)
             </h3>
             <ul className="space-y-3">
               {topForMetric.map((p, idx)=> (
@@ -130,7 +275,7 @@ export default function StatsPage(){
 
           {/* Averages by metric */}
           <article className="feature-card rounded-2xl p-6">
-            <h3 className="text-xl font-bold mb-4 text-white">Moyennes par métrique</h3>
+            <h3 className="text-xl font-bold mb-4 text-white">Moyennes par attribut</h3>
             <div className="grid gap-3 sm:grid-cols-2">
               {metrics.map(m=> (
                 <div key={m.key} className="glass-effect rounded-lg p-4">

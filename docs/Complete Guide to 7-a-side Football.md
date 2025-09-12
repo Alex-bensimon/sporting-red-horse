@@ -499,7 +499,7 @@ Le football à 7 contre 7 est une variante dynamique du football traditionnel qu
 
 ## 🎯 Objectifs de Saison - Sporting Red Horse
 
-### Objectifs Collectifs 2024-2025
+### Objectifs Collectifs 2025-2026
 - **Sportifs :**
   - Finir dans le top 3 du championnat
   - Améliorer notre ratio buts marqués/encaissés

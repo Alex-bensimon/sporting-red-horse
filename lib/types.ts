@@ -10,6 +10,7 @@ export type Match = {
 
 export type Player = {
   id: string
+  uid?: string
   name: string
   position: 'GK' | 'DEF' | 'MID' | 'FWD'
   rating: number
@@ -24,6 +25,7 @@ export type Player = {
   jersey?: number
   heightCm?: number
   weightKg?: number
+  isCaptain?: boolean
 }
 
 export type Slot = { key: string; x: number; y: number; position: Player['position'] | 'ANY' }
@@ -35,7 +37,68 @@ export type SavedLineup = {
   formation: string
   lineup: Lineup
   subs?: string[]
+  absentPlayers?: string[]
   matchId?: string | null
   createdAt?: any
+}
+
+export type MatchSheet = {
+  id?: string
+  matchId: string
+  lineup: SavedLineup
+  actualPlayers: string[]
+  absentPlayers: string[]
+  startersBySlot?: Lineup
+  formationAtValidation?: string
+  subs?: string[]
+  createdAt?: any
+  createdBy?: string
+  lastModifiedAt?: any
+  lastModifiedBy?: string
+  ratingsClosed?: boolean
+  ratingsClosedAt?: any
+  ratingsClosedBy?: string
+}
+
+export type PlayerRating = {
+  id?: string
+  matchId: string
+  ratedPlayerId: string
+  raterPlayerId: string
+  rating: number
+  comment?: string
+  createdAt?: any
+}
+
+export type MatchPlayerStats = {
+  id?: string
+  matchId: string
+  playerId: string
+  goals?: number
+  assists?: number
+  yellowCards?: number
+  redCards?: number
+  cleanSheet?: boolean
+  minutes?: number
+  createdAt?: any
+  lastModifiedAt?: any
+  createdBy?: string
+  lastModifiedBy?: string
+}
+
+export type AuthenticatedPlayer = {
+  id: string
+  playerId: string
+  isAuthenticated: boolean
+  lastLogin?: any
+}
+
+export type UserMeta = {
+  playerId: string
+  name: string
+  isFirstConnection: boolean
+  uid?: string
+  email?: string
+  roles?: string[]
 }
 

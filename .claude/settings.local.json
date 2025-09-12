@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(npm run seed:users:*)",
+      "Bash(npm run seed:formations:*)",
+      "Bash(npm run seed:players:*)",
+      "Bash(firebase deploy:*)"
+    ],
+    "deny": []
+  }
+}

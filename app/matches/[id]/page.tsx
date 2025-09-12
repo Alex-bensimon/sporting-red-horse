@@ -1,13 +1,37 @@
-import { matches } from '@/lib/data'
+"use client"
+import { getMatches } from '@/lib/store'
+import type { Match } from '@/lib/types'
+import { useEffect, useState } from 'react'
+import MatchManager from './match-manager'
 import Builder from './partial-builder'
 
-export function generateStaticParams(){
-  return matches.map(m => ({ id: m.id }))
-}
-
 export default function MatchPage({ params }:{ params:{ id:string }}){
-  const match = matches.find(m=> m.id===params.id)
-  if (!match) return <div className="container py-6">Match introuvable.</div>
+  const [match, setMatch] = useState<Match | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  useEffect(() => {
+    async function loadMatch() {
+      const allMatches = await getMatches()
+      const foundMatch = allMatches.find(m => m.id === params.id)
+      setMatch(foundMatch || null)
+      setLoading(false)
+    }
+    loadMatch()
+  }, [params.id])
+
+  if (loading) {
+    return (
+      <section className="container py-16 text-center">
+        <div className="text-zinc-400">Chargement...</div>
+      </section>
+    )
+  }
+
+  if (!match) {
+    return <div className="container py-6">Match introuvable.</div>
+  }
+
   return (
     <>
       <section className="relative py-10">
@@ -19,8 +43,12 @@ export default function MatchPage({ params }:{ params:{ id:string }}){
           <div className="text-zinc-400 mt-2">{match.home ? 'Domicile' : 'Extérieur'} • {match.location}</div>
         </div>
       </section>
+      
       <section className="container pb-12">
-        <Builder matchId={match.id} />
+        <MatchManager matchId={match.id} key={`manager-${refreshKey}`} />
+        <div className="mt-8">
+          <Builder matchId={match.id} onLineupSaved={() => setRefreshKey(prev => prev + 1)} />
+        </div>
       </section>
     </>
   )

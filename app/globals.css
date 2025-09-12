@@ -170,16 +170,16 @@ body::before {
 }
 
 /* Football pitch */
-.pitch{position:relative; min-height:920px; border-radius:1rem; overflow:hidden; border:1px solid rgba(16,185,129,.35);} 
+.pitch{position:relative; min-height:840px; border-radius:1rem; overflow:hidden; border:1px solid rgba(16,185,129,.35);} 
 .pitch::before{content:""; position:absolute; inset:0; background:
   radial-gradient(100% 60% at 50% 0%, rgba(16,185,129,.6), rgba(6,95,70,.9)),
   linear-gradient(#0b3d2e, #0a2e24);
   z-index:0;}
-.pitch::after{content:""; position:absolute; inset:12px; border:2px solid rgba(255,255,255,.18); border-radius:.75rem; z-index:1;
+.pitch::after{content:""; position:absolute; inset:8px; border:2px solid rgba(255,255,255,.18); border-radius:.75rem; z-index:1;
   /* Extra field markings for 7v7 half-pitch */
   background:
     /* Center line near top (halfway) */
-    linear-gradient(rgba(255,255,255,.18), rgba(255,255,255,.18)) center 14%/80% 2px no-repeat,
+    linear-gradient(rgba(255,255,255,.18), rgba(255,255,255,.18)) center 12%/80% 2px no-repeat,
     /* Penalty area rectangle */
     linear-gradient(rgba(255,255,255,.18), rgba(255,255,white,.18)) center 72%/60% 2px no-repeat,
     linear-gradient(rgba(255,255,255,.18), rgba(255,255,255,.18)) 20% 72%/2px 22% no-repeat,

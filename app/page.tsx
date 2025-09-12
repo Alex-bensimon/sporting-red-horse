@@ -37,7 +37,7 @@ export default function HomePage(){
                 <div className="text-sm text-zinc-400">Joueurs</div>
               </div>
               <div className="text-center space-y-2">
-                <div className="text-2xl font-bold text-redhorse-gold">2024</div>
+                <div className="text-2xl font-bold text-redhorse-gold">2025</div>
                 <div className="text-sm text-zinc-400">Saison</div>
               </div>
             </div>
