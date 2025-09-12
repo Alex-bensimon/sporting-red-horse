@@ -119,11 +119,9 @@ export default function PlayerPage({ params }:{ params:{ id:string }}){
               <div className="text-lg font-bold text-white">{p.weightKg ? `${p.weightKg} kg` : '—'}</div>
             </div>
           </div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="glass-effect rounded-2xl p-6">
-            <h3 className="mb-4 text-xl font-bold text-white">Attributs</h3>
+          
+          <div className="mt-4">
+            <h3 className="mb-3 text-lg font-bold text-white">Attributs</h3>
             <ul className="grid grid-cols-2 gap-3 text-sm">
               <Stat label="Vitesse" value={p.pace} emoji="💨" />
               <Stat label="Tir" value={p.shooting} emoji="⚽" />
@@ -133,6 +131,9 @@ export default function PlayerPage({ params }:{ params:{ id:string }}){
               <Stat label="Physique" value={p.physical} emoji="💪" />
             </ul>
           </div>
+        </div>
+
+        <div className="space-y-4">
           
           <div className="glass-effect rounded-2xl p-6">
             <h3 className="mb-4 text-xl font-bold text-white">Statistiques de Match</h3>

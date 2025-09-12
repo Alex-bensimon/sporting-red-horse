@@ -45,7 +45,7 @@ export default function HomePage(){
           <div className="flex items-center justify-center relative">
             <div className="absolute inset-0 bg-gradient-to-r from-redhorse-red/20 to-redhorse-gold/20 rounded-full blur-3xl"></div>
             <img 
-              src="/logo.jpeg" 
+              src="/logo_animated.gif" 
               alt="SRH" 
               className="h-64 w-64 md:h-80 md:w-80 lg:h-96 lg:w-96 rounded-full drop-shadow-2xl ring-4 ring-redhorse-gold/20 hover:ring-redhorse-gold/40 transition-all duration-500 relative z-10" 
             />

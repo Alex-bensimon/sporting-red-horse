@@ -30,7 +30,7 @@ export default function Header() {
       <div className="container flex items-center justify-between gap-4 py-4">
         <div className="flex items-center gap-4">
           <a href="/" aria-label="Aller à l'accueil">
-            <img src="/logo.jpeg" alt="SRH" className="h-12 w-12 rounded-full ring-2 ring-redhorse-gold/30 transition-all duration-300 hover:ring-redhorse-gold/60" />
+            <img src="/logo_animated.gif" alt="SRH" className="h-12 w-12 rounded-full ring-2 ring-redhorse-gold/30 transition-all duration-300 hover:ring-redhorse-gold/60" />
           </a>
           <div>
             <h1 className="font-bold tracking-wide text-lg text-redhorse-gold">Sporting Red Horse</h1>

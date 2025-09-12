@@ -7,9 +7,9 @@ export const metadata: Metadata = {
   title: 'Sporting Red Horse • 7v7',
   description: "Site officiel du Sporting Red Horse : calendrier, actualités, médias, résumés, effectif et constructeur de compositions.",
   icons: {
-    icon: '/logo.jpeg',
-    shortcut: '/logo.jpeg',
-    apple: '/logo.jpeg',
+    icon: '/logo_animated.gif',
+    shortcut: '/logo_animated.gif',
+    apple: '/logo_animated.gif',
   },
 }
 
@@ -24,7 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="container py-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="flex items-center gap-3">
-                <img src="/logo.jpeg" className="h-10 w-10 rounded-full ring-2 ring-redhorse-gold/30" alt="SRH" />
+                <img src="/logo_animated.gif" className="h-10 w-10 rounded-full ring-2 ring-redhorse-gold/30" alt="SRH" />
                 <div>
                   <div className="font-bold text-redhorse-gold">Sporting Red Horse</div>
                   <div className="text-xs text-zinc-400">© {new Date().getFullYear()} - Tous droits réservés</div>
