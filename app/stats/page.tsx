@@ -1,6 +1,8 @@
 "use client"
-import { getPlayers, getAllMatchPlayerStats, getMatches, getAllPlayerRatings } from '@/lib/store'
+import { getPlayers, getMatches, getStatsForPages, getRatingsForPages } from '@/lib/optimized-store'
 import type { Player, MatchPlayerStats, Match, PlayerRating } from '@/lib/types'
+import { countFinishedMatches } from '@/lib/match-utils'
+import { areAllFiltersDisabled } from '@/lib/filter-debug'
 import { useEffect, useMemo, useState } from 'react'
 
 type MetricKey = keyof Pick<Player, 'rating' | 'pace' | 'shooting' | 'passing' | 'dribbling' | 'defense' | 'physical'>
@@ -12,19 +14,22 @@ export default function StatsPage(){
   const [matches, setMatches] = useState<Match[]>([])
   const [playerRatings, setPlayerRatings] = useState<PlayerRating[]>([])
   const [loading, setLoading] = useState(true)
+  const [matchFilter, setMatchFilter] = useState<'all' | 'home' | 'away'>('all')
+  const [competitionFilter, setCompetitionFilter] = useState<string>('all')
+  const [timeFrameFilter, setTimeFrameFilter] = useState<'all' | 'current-season' | 'last-3-months'>('all')
 
   useEffect(()=>{ 
     async function loadData() {
-      const [playersData, statsData, matchesData, ratingsData] = await Promise.all([
+      const [playersData, matchesData, statsData, ratingsData] = await Promise.all([
         getPlayers(),
-        getAllMatchPlayerStats(),
         getMatches(),
-        getAllPlayerRatings()
+        getStatsForPages(),
+        getRatingsForPages()
       ])
       setPlayers(playersData)
-      setMatchStats(statsData)
       setMatches(matchesData)
-      setPlayerRatings(ratingsData)
+      setMatchStats(statsData.all)
+      setPlayerRatings(ratingsData.all)
       setLoading(false)
     }
     loadData()
@@ -54,20 +59,97 @@ export default function StatsPage(){
     }
   },[players])
   
+  // Compétitions disponibles
+  const availableCompetitions = useMemo(() => {
+    const competitions = new Set<string>()
+    matches.forEach(match => {
+      if (match.competition) {
+        competitions.add(match.competition)
+      }
+    })
+    return Array.from(competitions).sort()
+  }, [matches])
+
+  // Données filtrées par tous les critères
+  const filteredMatches = useMemo(() => {
+    return matches.filter(m => {
+      // Filtre domicile/extérieur
+      if (matchFilter !== 'all') {
+        if (matchFilter === 'home' && !m.home) return false
+        if (matchFilter === 'away' && m.home) return false
+      }
+      
+      // Filtre compétition
+      if (competitionFilter !== 'all') {
+        const competition = m.competition || 'Sans compétition'
+        if (competition !== competitionFilter) return false
+      }
+      
+      // Filtre période
+      if (timeFrameFilter !== 'all') {
+        const matchDate = new Date(m.date)
+        const now = new Date()
+        
+        if (timeFrameFilter === 'current-season') {
+          // Considère septembre comme début de saison
+          const seasonStart = new Date(now.getFullYear(), 8, 1) // Septembre = mois 8
+          if (now.getMonth() < 8) {
+            seasonStart.setFullYear(now.getFullYear() - 1)
+          }
+          if (matchDate < seasonStart) return false
+        }
+        
+        if (timeFrameFilter === 'last-3-months') {
+          const threeMonthsAgo = new Date()
+          threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
+          if (matchDate < threeMonthsAgo) return false
+        }
+      }
+      
+      return true
+    })
+  }, [matches, matchFilter, competitionFilter, timeFrameFilter])
+  
+  const filteredMatchIds = useMemo(() => {
+    return new Set(filteredMatches.map(m => m.id))
+  }, [filteredMatches])
+  
+  const filteredMatchStats = useMemo(() => {
+    // Appliquer tous les filtres (pas seulement matchFilter)
+    if (areAllFiltersDisabled(matchFilter, competitionFilter, timeFrameFilter)) {
+      return matchStats
+    }
+    return matchStats.filter(s => filteredMatchIds.has(s.matchId))
+  }, [matchStats, filteredMatchIds, matchFilter, competitionFilter, timeFrameFilter])
+  
+  const filteredRatings = useMemo(() => {
+    // Appliquer tous les filtres (pas seulement matchFilter)
+    if (areAllFiltersDisabled(matchFilter, competitionFilter, timeFrameFilter)) {
+      return playerRatings
+    }
+    return playerRatings.filter(r => filteredMatchIds.has(r.matchId))
+  }, [playerRatings, filteredMatchIds, matchFilter, competitionFilter, timeFrameFilter])
+  
   const clubStats = useMemo(() => {
-    if (matchStats.length === 0) return null
+    if (filteredMatchStats.length === 0) return null
     
-    const totalGoals = matchStats.reduce((sum, s) => sum + (s.goals || 0), 0)
-    const totalAssists = matchStats.reduce((sum, s) => sum + (s.assists || 0), 0)
-    const totalYellowCards = matchStats.reduce((sum, s) => sum + (s.yellowCards || 0), 0)
-    const totalRedCards = matchStats.reduce((sum, s) => sum + (s.redCards || 0), 0)
-    const totalCleanSheets = matchStats.reduce((sum, s) => sum + (s.cleanSheet ? 1 : 0), 0)
-    const totalMinutes = matchStats.reduce((sum, s) => sum + (s.minutes || 0), 0)
-    const matchesPlayed = matches.length
-    const playersWithStats = new Set(matchStats.map(s => s.playerId)).size
+    // Debug en développement
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🎛️ Filtres actifs - Matchs: ${filteredMatches.length}, Stats: ${filteredMatchStats.length}, Ratings: ${filteredRatings.length}`)
+    }
+    
+    const totalGoals = filteredMatchStats.reduce((sum, s) => sum + (s.goals || 0), 0)
+    const totalAssists = filteredMatchStats.reduce((sum, s) => sum + (s.assists || 0), 0)
+    const totalYellowCards = filteredMatchStats.reduce((sum, s) => sum + (s.yellowCards || 0), 0)
+    const totalRedCards = filteredMatchStats.reduce((sum, s) => sum + (s.redCards || 0), 0)
+    const totalCleanSheets = filteredMatchStats.reduce((sum, s) => sum + (s.cleanSheet ? 1 : 0), 0)
+    const totalMinutes = filteredMatchStats.reduce((sum, s) => sum + (s.minutes || 0), 0)
+    // Ne compter que les matchs terminés (passés)
+    const matchesPlayed = countFinishedMatches(filteredMatches)
+    const playersWithStats = new Set(filteredMatchStats.map(s => s.playerId)).size
     
     // Top performers
-    const playerGoals = matchStats.reduce((acc, s) => {
+    const playerGoals = filteredMatchStats.reduce((acc, s) => {
       if (!acc[s.playerId]) acc[s.playerId] = { goals: 0, assists: 0, matches: 0 }
       acc[s.playerId].goals += s.goals || 0
       acc[s.playerId].assists += s.assists || 0
@@ -105,13 +187,13 @@ export default function StatsPage(){
       topScorer,
       topAssist
     }
-  }, [matchStats, matches, players])
+  }, [filteredMatchStats, filteredMatches, players])
   
   const ratingsStats = useMemo(() => {
-    if (playerRatings.length === 0) return null
+    if (filteredRatings.length === 0) return null
     
     // Grouper par joueur puis par match pour calculer les moyennes par match
-    const playerMatchRatings = playerRatings.reduce((acc, rating) => {
+    const playerMatchRatings = filteredRatings.reduce((acc, rating) => {
       if (!acc[rating.ratedPlayerId]) {
         acc[rating.ratedPlayerId] = {}
       }
@@ -132,7 +214,7 @@ export default function StatsPage(){
     
     // Statistiques globales basées sur les moyennes par match
     const allMatchAverages = Object.values(playerMatchAverages).flat()
-    const totalRatings = playerRatings.length
+    const totalRatings = filteredRatings.length
     const overallAverage = allMatchAverages.length > 0 ? 
       Math.round((allMatchAverages.reduce((sum, avg) => sum + avg, 0) / allMatchAverages.length) * 10) / 10 : 0
     const playersRated = Object.keys(playerMatchAverages).length
@@ -154,13 +236,13 @@ export default function StatsPage(){
       playersRated,
       bestRatedPlayer
     }
-  }, [playerRatings, players])
+  }, [filteredRatings, players])
   
   const topRatedPlayers = useMemo(() => {
-    if (playerRatings.length === 0) return []
+    if (filteredRatings.length === 0) return []
     
     // Grouper par joueur puis par match
-    const playerMatchRatings = playerRatings.reduce((acc, rating) => {
+    const playerMatchRatings = filteredRatings.reduce((acc, rating) => {
       if (!acc[rating.ratedPlayerId]) {
         acc[rating.ratedPlayerId] = {}
       }
@@ -192,7 +274,7 @@ export default function StatsPage(){
       .filter(Boolean)
       .sort((a, b) => (b?.averageRating || 0) - (a?.averageRating || 0))
       .slice(0, 10)
-  }, [playerRatings, players])
+  }, [filteredRatings, players])
 
   const metrics: { key: MetricKey; label: string; emoji: string }[] = [
     { key: 'rating', label: 'Note', emoji: '📊' },
@@ -231,6 +313,91 @@ export default function StatsPage(){
             <p className="text-zinc-400 max-w-2xl mx-auto">
               Aperçu des performances individuelles et du collectif du Sporting Red Horse
             </p>
+          </div>
+          
+          {/* Filtres avancés */}
+          <div className="glass-effect rounded-2xl p-6 mb-8">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              🎛️ Filtres
+            </h3>
+            
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {/* Filtre domicile/extérieur */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">Type de match</label>
+                <div className="flex flex-wrap gap-1">
+                  {[
+                    { key: 'all', label: 'Tous', emoji: '🏟️' },
+                    { key: 'home', label: 'Domicile', emoji: '🏠' },
+                    { key: 'away', label: 'Extérieur', emoji: '✈️' }
+                  ].map((filter) => (
+                    <button
+                      key={filter.key}
+                      onClick={() => setMatchFilter(filter.key as 'all' | 'home' | 'away')}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                        matchFilter === filter.key
+                          ? 'bg-redhorse-gold/20 border-redhorse-gold text-redhorse-gold'
+                          : 'bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-redhorse-gold/40'
+                      }`}
+                    >
+                      <span className="mr-1">{filter.emoji}</span>
+                      {filter.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Filtre compétition */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">Compétition</label>
+                <select
+                  value={competitionFilter}
+                  onChange={(e) => setCompetitionFilter(e.target.value)}
+                  className="w-full rounded-lg border border-zinc-600 bg-zinc-800/50 px-3 py-2 text-white focus:border-redhorse-gold focus:outline-none"
+                >
+                  <option value="all">🏆 Toutes les compétitions</option>
+                  {availableCompetitions.map(comp => (
+                    <option key={comp} value={comp}>{comp}</option>
+                  ))}
+                  <option value="Sans compétition">Sans compétition</option>
+                </select>
+              </div>
+
+              {/* Filtre période */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">Période</label>
+                <select
+                  value={timeFrameFilter}
+                  onChange={(e) => setTimeFrameFilter(e.target.value as 'all' | 'current-season' | 'last-3-months')}
+                  className="w-full rounded-lg border border-zinc-600 bg-zinc-800/50 px-3 py-2 text-white focus:border-redhorse-gold focus:outline-none"
+                >
+                  <option value="all">📅 Toutes les périodes</option>
+                  <option value="current-season">🗓️ Saison en cours</option>
+                  <option value="last-3-months">📆 3 derniers mois</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Bouton reset + compteur */}
+            <div className="mt-4 flex justify-between items-center">
+              <div className="text-sm text-zinc-400">
+                <span className="font-semibold text-redhorse-gold">{filteredMatches.length}</span> 
+                {filteredMatches.length === 1 ? ' match' : ' matchs'} sélectionné{filteredMatches.length > 1 ? 's' : ''}
+                {filteredMatches.length !== matches.length && (
+                  <span className="text-zinc-500"> sur {matches.length}</span>
+                )}
+              </div>
+              <button
+                onClick={() => {
+                  setMatchFilter('all')
+                  setCompetitionFilter('all')
+                  setTimeFrameFilter('all')
+                }}
+                className="text-sm text-zinc-400 hover:text-zinc-300 underline"
+              >
+                ↻ Réinitialiser
+              </button>
+            </div>
           </div>
 
           {/* Statistiques globales du club */}

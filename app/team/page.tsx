@@ -1,6 +1,6 @@
 "use client"
 import { FutCard } from '@/components/FutCard';
-import { getPlayers } from '@/lib/store';
+import { getPlayers } from '@/lib/optimized-store';
 import type { Player } from '@/lib/types';
 import { useEffect, useMemo, useState } from 'react';
 

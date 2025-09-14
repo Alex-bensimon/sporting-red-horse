@@ -15,6 +15,14 @@ export default function SchedulePage(){
   const [editingMatch, setEditingMatch] = useState<Match | null>(null)
   const [showConfirmDelete, setShowConfirmDelete] = useState<string | null>(null)
   
+  // Nouveaux filtres
+  const [filters, setFilters] = useState({
+    homeAway: 'all' as 'all' | 'home' | 'away',
+    competition: 'all',
+    timeFrame: 'all' as 'all' | 'upcoming' | 'past',
+    month: 'all'
+  })
+  
   // Valeurs uniques pour l'autocomplétion
   const uniqueOpponents = useMemo(() => [...new Set(matches.map(m => m.opponent).filter(Boolean))], [matches])
   const uniqueLocations = useMemo(() => [...new Set(matches.map(m => m.location).filter(Boolean))], [matches])
@@ -47,7 +55,56 @@ export default function SchedulePage(){
     loadData()
   }, [])
 
-  const filteredMatches = useMemo(()=> matches.filter(m => !q || `${m.opponent} ${m.location} ${m.competition||''}`.toLowerCase().includes(q.toLowerCase())),[matches, q])
+  // Listes pour les filtres
+  const availableMonths = useMemo(() => {
+    const monthsSet = new Set<string>()
+    matches.forEach(match => {
+      const date = new Date(match.date)
+      const monthYear = date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+      monthsSet.add(monthYear)
+    })
+    return Array.from(monthsSet).sort()
+  }, [matches])
+
+  const filteredMatches = useMemo(() => {
+    return matches.filter(m => {
+      // Filtre par recherche textuelle
+      if (q && !`${m.opponent} ${m.location} ${m.competition||''}`.toLowerCase().includes(q.toLowerCase())) {
+        return false
+      }
+      
+      // Filtre domicile/extérieur
+      if (filters.homeAway !== 'all') {
+        if (filters.homeAway === 'home' && !m.home) return false
+        if (filters.homeAway === 'away' && m.home) return false
+      }
+      
+      // Filtre compétition
+      if (filters.competition !== 'all') {
+        const competition = m.competition || 'Sans compétition'
+        if (competition !== filters.competition) return false
+      }
+      
+      // Filtre période
+      if (filters.timeFrame !== 'all') {
+        const matchDate = new Date(m.date)
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        
+        if (filters.timeFrame === 'upcoming' && matchDate < today) return false
+        if (filters.timeFrame === 'past' && matchDate >= today) return false
+      }
+      
+      // Filtre par mois
+      if (filters.month !== 'all') {
+        const matchDate = new Date(m.date)
+        const matchMonthYear = matchDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+        if (matchMonthYear !== filters.month) return false
+      }
+      
+      return true
+    })
+  }, [matches, q, filters])
 
   function exportICS(){
     const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//SRH//Calendar//FR']
@@ -95,6 +152,7 @@ export default function SchedulePage(){
             </p>
           </div>
           
+          {/* Barre de recherche et boutons */}
           <div className="glass-effect rounded-2xl p-6 mb-8">
             <div className="flex flex-col sm:flex-row items-center gap-4">
               <div className="flex-1 w-full sm:w-auto">
@@ -116,6 +174,88 @@ export default function SchedulePage(){
                   ➕ Ajouter un match
                 </button>
               )}
+            </div>
+          </div>
+
+          {/* Filtres avancés */}
+          <div className="glass-effect rounded-2xl p-6 mb-8">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              🎛️ Filtres
+            </h3>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {/* Filtre domicile/extérieur */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">Type de match</label>
+                <select
+                  value={filters.homeAway}
+                  onChange={(e) => setFilters({...filters, homeAway: e.target.value as 'all' | 'home' | 'away'})}
+                  className="w-full rounded-lg border border-zinc-600 bg-zinc-800/50 px-3 py-2 text-white focus:border-redhorse-gold focus:outline-none"
+                >
+                  <option value="all">🏟️ Tous les matchs</option>
+                  <option value="home">🏠 Domicile</option>
+                  <option value="away">✈️ Extérieur</option>
+                </select>
+              </div>
+
+              {/* Filtre compétition */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">Compétition</label>
+                <select
+                  value={filters.competition}
+                  onChange={(e) => setFilters({...filters, competition: e.target.value})}
+                  className="w-full rounded-lg border border-zinc-600 bg-zinc-800/50 px-3 py-2 text-white focus:border-redhorse-gold focus:outline-none"
+                >
+                  <option value="all">🏆 Toutes les compétitions</option>
+                  {uniqueCompetitions.map(comp => (
+                    <option key={comp} value={comp}>{comp}</option>
+                  ))}
+                  <option value="Sans compétition">Sans compétition</option>
+                </select>
+              </div>
+
+              {/* Filtre période */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">Période</label>
+                <select
+                  value={filters.timeFrame}
+                  onChange={(e) => setFilters({...filters, timeFrame: e.target.value as 'all' | 'upcoming' | 'past'})}
+                  className="w-full rounded-lg border border-zinc-600 bg-zinc-800/50 px-3 py-2 text-white focus:border-redhorse-gold focus:outline-none"
+                >
+                  <option value="all">📅 Toutes les dates</option>
+                  <option value="upcoming">⏭️ À venir</option>
+                  <option value="past">⏮️ Passés</option>
+                </select>
+              </div>
+
+              {/* Filtre mois */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">Mois</label>
+                <select
+                  value={filters.month}
+                  onChange={(e) => setFilters({...filters, month: e.target.value})}
+                  className="w-full rounded-lg border border-zinc-600 bg-zinc-800/50 px-3 py-2 text-white focus:border-redhorse-gold focus:outline-none"
+                >
+                  <option value="all">📆 Tous les mois</option>
+                  {availableMonths.map(month => (
+                    <option key={month} value={month}>{month}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Bouton reset filtres */}
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => setFilters({
+                  homeAway: 'all',
+                  competition: 'all',
+                  timeFrame: 'all',
+                  month: 'all'
+                })}
+                className="text-sm text-zinc-400 hover:text-zinc-300 underline"
+              >
+                ↻ Réinitialiser les filtres
+              </button>
             </div>
           </div>
 
@@ -204,6 +344,17 @@ export default function SchedulePage(){
       </section>
 
       <section className="container pb-16">
+        {/* Compteur de résultats */}
+        <div className="mb-6 text-center">
+          <p className="text-zinc-400">
+            <span className="font-semibold text-redhorse-gold">{filteredMatches.length}</span> 
+            {filteredMatches.length === 1 ? ' match trouvé' : ' matchs trouvés'}
+            {filteredMatches.length !== matches.length && (
+              <span className="text-zinc-500"> sur {matches.length} au total</span>
+            )}
+          </p>
+        </div>
+
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredMatches.sort((a,b)=> a.date.localeCompare(b.date)).map(m=> {
             const hasSheet = matchSheets[m.id]

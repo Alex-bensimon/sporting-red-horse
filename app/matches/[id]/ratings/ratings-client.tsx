@@ -1,6 +1,6 @@
 "use client"
 import { useAuth } from '@/lib/auth-context'
-import { getMatches, getMatchSheet, getPlayerRatingsForMatch, getPlayers, savePlayerRating } from '@/lib/store'
+import { getMatches, getMatchSheet, getPlayerRatingsForMatch, getPlayers, savePlayerRating } from '@/lib/optimized-store'
 import type { Match, MatchSheet, Player, PlayerRating } from '@/lib/types'
 import { useEffect, useState } from 'react'
 

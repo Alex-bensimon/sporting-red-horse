@@ -1,6 +1,6 @@
 "use client"
 import { useAuth } from '@/lib/auth-context'
-import { closeRatingsForMatch, getMatches, getMatchPlayerStats, getMatchSheet, getPlayerRatingsForMatch, getPlayers } from '@/lib/store'
+import { closeRatingsForMatch, getMatches, getMatchPlayerStats, getMatchSheet, getPlayerRatingsForMatch, getPlayers } from '@/lib/optimized-store'
 import type { Match, MatchPlayerStats, MatchSheet, Player, PlayerRating } from '@/lib/types'
 import { useEffect, useState } from 'react'
 
@@ -12,6 +12,7 @@ export default function MatchDetailsClient({ matchId }: { matchId: string }) {
   const [players, setPlayers] = useState<Player[]>([])
   const [playerStats, setPlayerStats] = useState<MatchPlayerStats[]>([])
   const [loading, setLoading] = useState(true)
+  const [hasVoted, setHasVoted] = useState(false)
 
   useEffect(() => {
     async function loadData() {
@@ -30,6 +31,12 @@ export default function MatchDetailsClient({ matchId }: { matchId: string }) {
         setRatings(playerRatings)
         setPlayers(allPlayers)
         setPlayerStats(stats)
+        
+        // Check if current player has voted
+        if (currentPlayer) {
+          const userVotes = playerRatings.filter(r => r.raterPlayerId === currentPlayer.id)
+          setHasVoted(userVotes.length > 0)
+        }
       } catch (error) {
         console.error('Erreur lors du chargement:', error)
       } finally {
@@ -38,7 +45,7 @@ export default function MatchDetailsClient({ matchId }: { matchId: string }) {
     }
     
     loadData()
-  }, [matchId])
+  }, [matchId, currentPlayer])
 
   const getPlayerName = (playerId: string) => {
     const player = players.find(p => p.id === playerId)
@@ -213,11 +220,17 @@ export default function MatchDetailsClient({ matchId }: { matchId: string }) {
                           </div>
                           {isPast && stats.count > 0 && (
                             <div className="flex items-center gap-2">
-                              <span className="text-xs text-zinc-400">Note moyenne:</span>
-                              <span className="text-sm font-semibold text-redhorse-gold">
-                                {stats.average}/10
-                              </span>
-                              <span className="text-xs text-zinc-500">({stats.count})</span>
+                              {(!isAuthenticated || hasVoted) ? (
+                                <>
+                                  <span className="text-xs text-zinc-400">Note moyenne:</span>
+                                  <span className="text-sm font-semibold text-redhorse-gold">
+                                    {stats.average}/10
+                                  </span>
+                                  <span className="text-xs text-zinc-500">({stats.count})</span>
+                                </>
+                              ) : (
+                                <span className="text-xs text-zinc-500">🔒 Notez pour voir</span>
+                              )}
                             </div>
                           )}
                         </div>
@@ -280,7 +293,20 @@ export default function MatchDetailsClient({ matchId }: { matchId: string }) {
               </h3>
               
               <div className="space-y-4">
-                <PlayersAverages ratings={ratings} players={players} actualIds={matchSheet.actualPlayers} />
+                {(!isAuthenticated || hasVoted) ? (
+                  <PlayersAverages ratings={ratings} players={players} actualIds={matchSheet.actualPlayers} />
+                ) : (
+                  <div className="text-center p-6 bg-zinc-800/50 rounded-lg">
+                    <div className="text-4xl mb-2">🔒</div>
+                    <p className="text-zinc-300 font-medium mb-2">Notes verrouillées</p>
+                    <p className="text-zinc-400 text-sm mb-4">
+                      Vous devez d'abord noter au moins un joueur pour voir les résultats
+                    </p>
+                    <a href={`/matches/${matchId}/ratings`} className="btn-primary rounded-lg px-4 py-2 text-white font-semibold">
+                      ⭐ Noter les joueurs
+                    </a>
+                  </div>
+                )}
                 
                 {!isAuthenticated && (
                   <div className="text-center p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
