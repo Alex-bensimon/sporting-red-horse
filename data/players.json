@@ -1,5 +1,5 @@
 [
-  { "id":"pGK", "name":"Tom", "position":"GK", "rating":84, "pace":45, "shooting":32, "passing":70, "dribbling":54, "defense":50, "physical":76, "jersey":1, "heightCm":182, "weightKg":75 },
+  { "id":"pGK", "name":"Tom", "position":"GK", "rating":84, "pace":45, "shooting":32, "passing":70, "dribbling":54, "defense":50, "physical":76, "photo":"/players/tom.webp", "jersey":1, "heightCm":182, "weightKg":75 },
   { "id":"pD1", "name":"Rémy", "position":"DEF", "rating":82, "pace":72, "shooting":40, "passing":66, "dribbling":64, "defense":84, "physical":82, "side":"L", "jersey":2, "heightCm":191, "weightKg":77, "isCaptain":true },
   { "id":"pD2", "name":"Pierre", "position":"DEF", "rating":81, "pace":70, "shooting":42, "passing":68, "dribbling":62, "defense":82, "physical":83, "side":"C", "jersey":3, "heightCm":177, "weightKg":68 },
   { "id":"pD3", "name":"Hugo", "position":"DEF", "rating":79, "pace":74, "shooting":38, "passing":64, "dribbling":60, "defense":80, "physical":80, "side":"R", "jersey":4, "heightCm":182, "weightKg":74, "isCaptain":true },

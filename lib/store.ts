@@ -276,10 +276,31 @@ export async function savePreset(preset: any) {
 export async function savePlayerRating(rating: Omit<PlayerRating, 'id' | 'createdAt'>): Promise<void> {
   if (!isFirebaseReady() || !db) throw new Error('Firebase non configuré')
   
-  await addDoc(collection(db, 'player_ratings'), {
-    ...rating,
-    createdAt: serverTimestamp()
-  })
+  // Check if a rating already exists for this rater-rated pair in this match
+  const qy = query(
+    collection(db, 'player_ratings'),
+    where('matchId', '==', rating.matchId),
+    where('raterPlayerId', '==', rating.raterPlayerId),
+    where('ratedPlayerId', '==', rating.ratedPlayerId)
+  )
+  
+  const snap = await getDocs(qy)
+  
+  if (!snap.empty) {
+    // Update existing rating
+    const existingDoc = snap.docs[0]
+    await updateDoc(doc(db, 'player_ratings', existingDoc.id), {
+      rating: rating.rating,
+      comment: rating.comment,
+      updatedAt: serverTimestamp()
+    })
+  } else {
+    // Create new rating
+    await addDoc(collection(db, 'player_ratings'), {
+      ...rating,
+      createdAt: serverTimestamp()
+    })
+  }
 }
 
 export async function getPlayerRatingsForMatch(matchId: string): Promise<PlayerRating[]> {

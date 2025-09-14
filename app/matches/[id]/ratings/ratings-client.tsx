@@ -53,8 +53,8 @@ export default function RatingsClient({ matchId }: { matchId: string }) {
     setRatings(prev => ({
       ...prev,
       [playerId]: {
-        ...prev[playerId],
-        rating
+        rating,
+        comment: prev[playerId]?.comment || ''
       }
     }))
   }
@@ -63,7 +63,7 @@ export default function RatingsClient({ matchId }: { matchId: string }) {
     setRatings(prev => ({
       ...prev,
       [playerId]: {
-        ...prev[playerId],
+        rating: prev[playerId]?.rating || 0,
         comment
       }
     }))
@@ -73,6 +73,8 @@ export default function RatingsClient({ matchId }: { matchId: string }) {
     if (!currentPlayer || !matchSheet) return
     
     setLoading(true)
+    setSaved(false)
+    
     try {
       const ratingPromises = Object.entries(ratings)
         .filter(([_, data]) => data.rating > 0)
@@ -82,19 +84,17 @@ export default function RatingsClient({ matchId }: { matchId: string }) {
             ratedPlayerId: playerId,
             raterPlayerId: currentPlayer.id,
             rating: data.rating,
-            comment: data.comment || undefined
+            comment: data.comment && data.comment.trim() ? data.comment : ''
           })
         )
       
       await Promise.all(ratingPromises)
       setSaved(true)
-      // Rediriger vers la page du match après une courte pause pour montrer le message
-      setTimeout(() => {
-        window.location.href = `/matches/${matchId}`
-      }, 1500)
+      
+      // Rediriger immédiatement vers la page de détails
+      window.location.href = `/matches/${matchId}/details`
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error)
-    } finally {
       setLoading(false)
     }
   }
@@ -261,12 +261,19 @@ export default function RatingsClient({ matchId }: { matchId: string }) {
               <button
                 onClick={handleSubmit}
                 disabled={loading || Object.values(ratings).every(r => !r.rating)}
-                className="btn-primary rounded-lg px-8 py-3 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-primary rounded-lg px-8 py-3 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center mx-auto gap-2"
               >
-                {loading ? 'Sauvegarde...' : 'Sauvegarder mes notes'}
+                {loading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Sauvegarde en cours...</span>
+                  </>
+                ) : (
+                  'Sauvegarder mes notes'
+                )}
               </button>
               <p className="text-sm text-zinc-500 mt-2">
-                Vos notes sont anonymes et ne peuvent pas être modifiées après validation
+                {loading ? 'Redirection vers les détails du match...' : 'Vos notes sont anonymes'}
               </p>
             </div>
           )}
