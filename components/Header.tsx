@@ -92,6 +92,18 @@ export default function Header() {
                       </svg>
                       Mon profil
                     </a>
+                    {currentPlayer?.id === 'pF1' && (
+                      <a
+                        href="/admin/dashboard"
+                        className="flex items-center gap-2 w-full px-3 py-2 text-sm text-zinc-300 hover:text-redhorse-gold hover:bg-redhorse-gold/10 rounded-lg transition-colors"
+                        onClick={() => setShowDropdown(false)}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        Dashboard Admin
+                      </a>
+                    )}
                     <div className="h-px bg-zinc-700 my-1" />
                     <button
                       onClick={() => {
@@ -140,6 +152,9 @@ export default function Header() {
           {isAuthenticated && currentPlayer ? (
             <div className="mt-2 border-t border-zinc-800 pt-2">
               <a href="/profile" onClick={()=> setShowMobileMenu(false)} className="block px-3 py-2 rounded-lg text-zinc-300 hover:text-redhorse-gold hover:bg-redhorse-gold/10">Mon profil</a>
+              {currentPlayer?.id === 'pF1' && (
+                <a href="/admin/dashboard" onClick={()=> setShowMobileMenu(false)} className="block px-3 py-2 rounded-lg text-zinc-300 hover:text-redhorse-gold hover:bg-redhorse-gold/10">Dashboard Admin</a>
+              )}
               <button
                 onClick={()=> { logout(); setShowMobileMenu(false) }}
                 className="w-full text-left block px-3 py-2 rounded-lg text-zinc-300 hover:text-red-400 hover:bg-red-400/10"
